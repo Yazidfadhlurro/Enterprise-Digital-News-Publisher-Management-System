@@ -33,48 +33,6 @@ Sistem manajemen portal berita berbasis web dengan alur editorial terstruktur. D
 | Editor | Review artikel, approve atau minta revisi |
 | Penulis | Buat dan kelola artikel milik sendiri |
 
----
-
-## Instalasi
-
-```bash
-# Clone repo
-git clone https://github.com/username/ednpms.git
-cd ednpms
-
-# Backend
-cd backend
-composer install
-cp .env.example .env
-php artisan key:generate
-php artisan migrate --seed
-php artisan serve
-
-# Frontend
-cd frontend
-npm install
-cp .env.example .env
-npm run dev
-```
-
----
-
-## Environment Variables
-
-Salin `.env.example` menjadi `.env` lalu sesuaikan:
-
-```env
-DB_CONNECTION=pgsql
-DB_HOST=127.0.0.1
-DB_PORT=5432
-DB_DATABASE=ednpms
-DB_USERNAME=postgres
-DB_PASSWORD=your_password
-
-VITE_API_URL=http://localhost:8000/api
-```
-
----
 
 ## Struktur Workflow
 
