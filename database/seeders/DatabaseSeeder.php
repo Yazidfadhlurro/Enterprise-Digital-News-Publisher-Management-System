@@ -10,11 +10,86 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        // Users
+        // Users - All Roles
         DB::table('users')->insert([
-            ['name' => 'Admin', 'email' => 'admin@portal.com', 'password' => Hash::make('password'), 'role' => 'admin', 'status' => 'active', 'created_at' => now(), 'updated_at' => now()],
-            ['name' => 'Reviewer', 'email' => 'reviewer@portal.com', 'password' => Hash::make('password'), 'role' => 'reviewer', 'status' => 'active', 'created_at' => now(), 'updated_at' => now()],
-            ['name' => 'Author', 'email' => 'author@portal.com', 'password' => Hash::make('password'), 'role' => 'author', 'status' => 'active', 'created_at' => now(), 'updated_at' => now()],
+            [
+                'name' => 'Admin User',
+                'email' => 'admin@portal.com',
+                'password' => Hash::make('password'),
+                'role' => 'admin',
+                'status' => 'active',
+                'email_verified_at' => now(),
+                'email_verification_code' => null,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'name' => 'Reviewer User',
+                'email' => 'reviewer@portal.com',
+                'password' => Hash::make('password'),
+                'role' => 'reviewer',
+                'status' => 'active',
+                'email_verified_at' => now(),
+                'email_verification_code' => null,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'name' => 'Author User',
+                'email' => 'author@portal.com',
+                'password' => Hash::make('password'),
+                'role' => 'author',
+                'status' => 'active',
+                'email_verified_at' => now(),
+                'email_verification_code' => null,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'name' => 'Regular User',
+                'email' => 'user@portal.com',
+                'password' => Hash::make('password'),
+                'role' => 'user',
+                'status' => 'active',
+                'email_verified_at' => now(),
+                'email_verification_code' => null,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            // Test users untuk approval flow
+            [
+                'name' => 'Test Author (Inactive)',
+                'email' => 'testauthor@portal.com',
+                'password' => Hash::make('password'),
+                'role' => 'author',
+                'status' => 'inactive',
+                'email_verified_at' => now(),
+                'email_verification_code' => '123456',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'name' => 'Test Reviewer (Inactive)',
+                'email' => 'testreviewer@portal.com',
+                'password' => Hash::make('password'),
+                'role' => 'reviewer',
+                'status' => 'inactive',
+                'email_verified_at' => now(),
+                'email_verification_code' => '654321',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'name' => 'Suspended User',
+                'email' => 'suspended@portal.com',
+                'password' => Hash::make('password'),
+                'role' => 'user',
+                'status' => 'suspended',
+                'email_verified_at' => now(),
+                'email_verification_code' => null,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
         ]);
 
         // Readers
