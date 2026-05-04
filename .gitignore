@@ -116,3 +116,23 @@ debug.log
 /node_modules/
 composer.phar
 pnpm-lock.yaml
+
+# Runtime logs (explicit)
+/storage/logs/*.log
+/storage/logs/*.log.*
+
+# MCP / AI helper artifacts (local only)
+/docs/MCP_PROJECT_ONBOARDING.md
+/docs/*MCP*.md
+/docs/*mcp*.md
+/scripts/smoke_test_roles.ps1
+*.prompt.md
+*.instructions.md
+*.agent.md
+copilot-instructions.md
+AGENTS.md
+.mcp.json
+*.mcp.json
+/.mcp/
+/.copilot/
+/.vscode/mcp.json

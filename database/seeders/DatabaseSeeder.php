@@ -17,6 +17,7 @@ class DatabaseSeeder extends Seeder
                 'email' => 'admin@portal.com',
                 'password' => Hash::make('password'),
                 'role' => 'admin',
+                'assigned_reviewer_id' => null,
                 'status' => 'active',
                 'email_verified_at' => now(),
                 'email_verification_code' => null,
@@ -28,6 +29,7 @@ class DatabaseSeeder extends Seeder
                 'email' => 'reviewer@portal.com',
                 'password' => Hash::make('password'),
                 'role' => 'reviewer',
+                'assigned_reviewer_id' => null,
                 'status' => 'active',
                 'email_verified_at' => now(),
                 'email_verification_code' => null,
@@ -39,6 +41,7 @@ class DatabaseSeeder extends Seeder
                 'email' => 'author@portal.com',
                 'password' => Hash::make('password'),
                 'role' => 'author',
+                'assigned_reviewer_id' => null,
                 'status' => 'active',
                 'email_verified_at' => now(),
                 'email_verification_code' => null,
@@ -50,6 +53,7 @@ class DatabaseSeeder extends Seeder
                 'email' => 'user@portal.com',
                 'password' => Hash::make('password'),
                 'role' => 'user',
+                'assigned_reviewer_id' => null,
                 'status' => 'active',
                 'email_verified_at' => now(),
                 'email_verification_code' => null,
@@ -62,6 +66,7 @@ class DatabaseSeeder extends Seeder
                 'email' => 'testauthor@portal.com',
                 'password' => Hash::make('password'),
                 'role' => 'author',
+                'assigned_reviewer_id' => null,
                 'status' => 'inactive',
                 'email_verified_at' => now(),
                 'email_verification_code' => '123456',
@@ -73,6 +78,7 @@ class DatabaseSeeder extends Seeder
                 'email' => 'testreviewer@portal.com',
                 'password' => Hash::make('password'),
                 'role' => 'reviewer',
+                'assigned_reviewer_id' => null,
                 'status' => 'inactive',
                 'email_verified_at' => now(),
                 'email_verification_code' => '654321',
@@ -84,13 +90,95 @@ class DatabaseSeeder extends Seeder
                 'email' => 'suspended@portal.com',
                 'password' => Hash::make('password'),
                 'role' => 'user',
+                'assigned_reviewer_id' => null,
                 'status' => 'suspended',
                 'email_verified_at' => now(),
                 'email_verification_code' => null,
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
+            [
+                'name' => 'Reviewer B',
+                'email' => 'reviewerb@portal.com',
+                'password' => Hash::make('password'),
+                'role' => 'reviewer',
+                'assigned_reviewer_id' => null,
+                'status' => 'active',
+                'email_verified_at' => now(),
+                'email_verification_code' => null,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'name' => 'Author Alpha',
+                'email' => 'author.alpha@portal.com',
+                'password' => Hash::make('password'),
+                'role' => 'author',
+                'assigned_reviewer_id' => null,
+                'status' => 'active',
+                'email_verified_at' => now(),
+                'email_verification_code' => null,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'name' => 'Author Bravo',
+                'email' => 'author.bravo@portal.com',
+                'password' => Hash::make('password'),
+                'role' => 'author',
+                'assigned_reviewer_id' => null,
+                'status' => 'active',
+                'email_verified_at' => now(),
+                'email_verification_code' => null,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'name' => 'Author Charlie',
+                'email' => 'author.charlie@portal.com',
+                'password' => Hash::make('password'),
+                'role' => 'author',
+                'assigned_reviewer_id' => null,
+                'status' => 'active',
+                'email_verified_at' => now(),
+                'email_verification_code' => null,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
         ]);
+
+        $primaryReviewerId = DB::table('users')
+            ->where('email', 'reviewer@portal.com')
+            ->value('id');
+
+        $secondaryReviewerId = DB::table('users')
+            ->where('email', 'reviewerb@portal.com')
+            ->value('id');
+
+        if ($primaryReviewerId) {
+            DB::table('users')
+                ->whereIn('email', [
+                    'author@portal.com',
+                    'testauthor@portal.com',
+                    'author.alpha@portal.com',
+                    'author.bravo@portal.com',
+                ])
+                ->where('role', 'author')
+                ->update([
+                    'assigned_reviewer_id' => $primaryReviewerId,
+                    'updated_at' => now(),
+                ]);
+        }
+
+        if ($secondaryReviewerId) {
+            DB::table('users')
+                ->where('email', 'author.charlie@portal.com')
+                ->where('role', 'author')
+                ->update([
+                    'assigned_reviewer_id' => $secondaryReviewerId,
+                    'updated_at' => now(),
+                ]);
+        }
 
         // Readers
         DB::table('readers')->insert([
@@ -136,6 +224,51 @@ class DatabaseSeeder extends Seeder
                 'slug' => 'startup-lokal-raih-pendanaan',
                 'excerpt' => 'Startup Indonesia dapat pendanaan besar',
                 'content' => '<p>Startup teknologi Indonesia berhasil raih pendanaan.</p>',
+                'status' => 'pending',
+                'reviewer_id' => null,
+                'published_at' => null,
+                'is_featured' => false,
+                'views_count' => 0,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'author_id' => 9,
+                'category_id' => 1,
+                'title' => 'Inovasi Cloud Lokal untuk UMKM',
+                'slug' => 'inovasi-cloud-lokal-untuk-umkm',
+                'excerpt' => 'UMKM mulai mengadopsi cloud lokal untuk efisiensi biaya operasional.',
+                'content' => '<p>Adopsi cloud lokal pada UMKM meningkat dalam dua kuartal terakhir.</p>',
+                'status' => 'pending',
+                'reviewer_id' => null,
+                'published_at' => null,
+                'is_featured' => false,
+                'views_count' => 0,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'author_id' => 10,
+                'category_id' => 2,
+                'title' => 'Strategi Pemasaran Digital untuk Produk Lokal',
+                'slug' => 'strategi-pemasaran-digital-untuk-produk-lokal',
+                'excerpt' => 'Pelaku usaha lokal memanfaatkan kanal digital untuk memperluas pasar nasional.',
+                'content' => '<p>Distribusi konten pemasaran berbasis komunitas memberi dampak positif pada konversi.</p>',
+                'status' => 'pending',
+                'reviewer_id' => null,
+                'published_at' => null,
+                'is_featured' => false,
+                'views_count' => 0,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'author_id' => 11,
+                'category_id' => 3,
+                'title' => 'Analisis Taktik Tim Nasional U-23',
+                'slug' => 'analisis-taktik-tim-nasional-u-23',
+                'excerpt' => 'Pendekatan taktis baru meningkatkan penguasaan bola dan transisi serangan.',
+                'content' => '<p>Pola 3-4-3 memberikan variasi build-up yang lebih efektif pada pertandingan terakhir.</p>',
                 'status' => 'pending',
                 'reviewer_id' => null,
                 'published_at' => null,

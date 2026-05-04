@@ -18,8 +18,12 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'email',
+        'phone',
+        'address',
+        'bio',
         'password',
         'role',
+        'assigned_reviewer_id',
         'avatar',
         'status',
         'email_verification_code',
@@ -142,6 +146,16 @@ class User extends Authenticatable
     public function canDeleteArticle($articleId = null): bool
     {
         return $this->canEditArticle($articleId);
+    }
+
+    public function assignedReviewer()
+    {
+        return $this->belongsTo(self::class, 'assigned_reviewer_id');
+    }
+
+    public function assignedAuthors()
+    {
+        return $this->hasMany(self::class, 'assigned_reviewer_id');
     }
 
     // ====================================

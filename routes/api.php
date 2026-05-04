@@ -2,8 +2,18 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AdminPermissionController;
+use App\Http\Controllers\AdminArticleController;
+use App\Http\Controllers\AdminCategoryController;
+use App\Http\Controllers\AdminActivityController;
+use App\Http\Controllers\AdminAssignmentController;
+use App\Http\Controllers\ArticleFeedbackController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\ReviewerArticleController;
+use App\Http\Controllers\AuthorArticleController;
+use App\Http\Controllers\ReaderArticleController;
 
 
 Route::prefix('auth')->group(function () {
@@ -17,6 +27,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Auth Routes (All Users)
     Route::prefix('auth')->group(function () {
         Route::get('/me', [AuthController::class, 'me']);
+        Route::post('/profile', [AuthController::class, 'updateProfile']);
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::put('/profile', [AuthController::class, 'updateProfile']);
         Route::post('/change-password', [AuthController::class, 'changePassword']);
@@ -25,149 +36,144 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::middleware(['role:admin'])->prefix('admin')->group(function () {
         // User Management
-        Route::post('/users', [UserController::class, 'store']);
-        Route::get('/users', [UserController::class, 'index']);
-        Route::get('/users/{id}', [UserController::class, 'show']);
-        Route::put('/users/{id}', [UserController::class, 'update']);
-        Route::delete('/users/{id}', [UserController::class, 'destroy']);
+        Route::post('/users', [UserController::class, 'store'])
+            ->middleware('action-permission:admin.users.create');
+        Route::get('/users', [UserController::class, 'index'])
+            ->middleware('action-permission:admin.users.view');
+        Route::get('/users/{id}', [UserController::class, 'show'])
+            ->middleware('action-permission:admin.users.view');
+        Route::put('/users/{id}', [UserController::class, 'update'])
+            ->middleware('action-permission:admin.users.update');
+        Route::delete('/users/{id}', [UserController::class, 'destroy'])
+            ->middleware('action-permission:admin.users.delete');
 
         // User Approval & Status Management
-        Route::post('/users/{id}/approve', [UserController::class, 'approve']);
-        Route::post('/users/{id}/reject', [UserController::class, 'reject']);
-        Route::post('/users/{id}/suspend', [UserController::class, 'suspend']);
-        Route::post('/users/{id}/unsuspend', [UserController::class, 'unsuspend']);
+        Route::post('/users/{id}/approve', [UserController::class, 'approve'])
+            ->middleware('action-permission:admin.users.status');
+        Route::post('/users/{id}/reject', [UserController::class, 'reject'])
+            ->middleware('action-permission:admin.users.status');
+        Route::post('/users/{id}/suspend', [UserController::class, 'suspend'])
+            ->middleware('action-permission:admin.users.status');
+        Route::post('/users/{id}/unsuspend', [UserController::class, 'unsuspend'])
+            ->middleware('action-permission:admin.users.status');
+
+        // Assignment Matrix
+        Route::get('/assignments/matrix', [AdminAssignmentController::class, 'matrix'])
+            ->middleware('action-permission:admin.assignments.view');
+        Route::post('/assignments/move', [AdminAssignmentController::class, 'moveAuthor'])
+            ->middleware('action-permission:admin.assignments.update');
+        Route::post('/assignments/bulk-move', [AdminAssignmentController::class, 'bulkMoveAuthors'])
+            ->middleware('action-permission:admin.assignments.update');
+        Route::post('/assignments/reassign-inactive-reviewer', [AdminAssignmentController::class, 'reassignInactiveReviewer'])
+            ->middleware('action-permission:admin.assignments.update');
+        Route::get('/assignments/logs', [AdminAssignmentController::class, 'logs'])
+            ->middleware('action-permission:admin.assignments.view');
 
         // Article Management
-        Route::get('/articles', function () {
-            return response()->json([
-                'status' => 'success',
-                'message' => 'All articles retrieved',
-                'data' => ['articles' => []]
-            ]);
-        });
+        Route::post('/articles', [AdminArticleController::class, 'store'])
+            ->middleware('action-permission:admin.articles.create');
+        Route::get('/articles', [AdminArticleController::class, 'index'])
+            ->middleware('action-permission:admin.articles.view');
+        Route::get('/articles/{id}', [AdminArticleController::class, 'show'])
+            ->middleware('action-permission:admin.articles.view');
+        Route::put('/articles/{id}', [AdminArticleController::class, 'update'])
+            ->middleware('action-permission:admin.articles.update');
+        Route::delete('/articles/{id}', [AdminArticleController::class, 'destroy'])
+            ->middleware('action-permission:admin.articles.delete');
+
+        // Category Management
+        Route::post('/categories', [AdminCategoryController::class, 'store'])
+            ->middleware('action-permission:admin.categories.create');
+        Route::get('/categories', [AdminCategoryController::class, 'index'])
+            ->middleware('action-permission:admin.categories.view');
+        Route::get('/categories/{id}', [AdminCategoryController::class, 'show'])
+            ->middleware('action-permission:admin.categories.view');
+        Route::put('/categories/{id}', [AdminCategoryController::class, 'update'])
+            ->middleware('action-permission:admin.categories.update');
+        Route::delete('/categories/{id}', [AdminCategoryController::class, 'destroy'])
+            ->middleware('action-permission:admin.categories.delete');
 
         // Dashboard
-        Route::get('/dashboard', function () {
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Dashboard stats retrieved',
-                'data' => [
-                    'total_users' => 0,
-                    'total_articles' => 0,
-                    'pending_articles' => 0,
-                ]
-            ]);
-        });
+        Route::get('/dashboard', [AdminDashboardController::class, 'index'])
+            ->middleware('action-permission:admin.dashboard.view');
+
+        Route::get('/feedback', [ArticleFeedbackController::class, 'adminIndex'])
+            ->middleware('action-permission:admin.activities.view');
+
+        // Permission Matrix
+        Route::get('/permissions', [AdminPermissionController::class, 'index'])
+            ->middleware('action-permission:admin.permissions.view');
+        Route::put('/permissions', [AdminPermissionController::class, 'update'])
+            ->middleware('action-permission:admin.permissions.update');
+
+        // Activity Logs
+        Route::get('/activities', [AdminActivityController::class, 'index'])
+            ->middleware('action-permission:admin.activities.view');
+        Route::get('/activities/export', [AdminActivityController::class, 'exportCsv'])
+            ->middleware('action-permission:admin.activities.export');
     });
 
 
     Route::middleware(['role:author,admin'])->prefix('author')->group(function () {
-        Route::post('/articles', function () {
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Article created',
-            ]);
-        });
-
-        Route::get('/articles', function () {
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Author articles retrieved',
-                'data' => ['articles' => []]
-            ]);
-        });
-
-        Route::put('/articles/{id}', function ($id) {
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Article updated',
-            ]);
-        });
-
-        Route::delete('/articles/{id}', function ($id) {
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Article deleted',
-            ]);
-        });
+        Route::get('/dashboard', [AuthorArticleController::class, 'dashboard'])
+            ->middleware('action-permission:author.dashboard.view');
+        Route::get('/activities', [AuthorArticleController::class, 'activities'])
+            ->middleware('action-permission:author.activities.view');
+        Route::get('/categories', [AuthorArticleController::class, 'categories']);
+        Route::post('/categories', [AuthorArticleController::class, 'storeCategory']);
+        Route::post('/articles', [AuthorArticleController::class, 'store'])
+            ->middleware('action-permission:author.articles.create');
+        Route::get('/articles', [AuthorArticleController::class, 'index'])
+            ->middleware('action-permission:author.articles.view');
+        Route::get('/articles/{id}', [AuthorArticleController::class, 'show'])
+            ->middleware('action-permission:author.articles.view');
+        Route::put('/articles/{id}', [AuthorArticleController::class, 'update'])
+            ->middleware('action-permission:author.articles.update');
+        Route::post('/articles/{id}/autosave', [AuthorArticleController::class, 'autosave'])
+            ->middleware('action-permission:author.articles.autosave');
+        Route::get('/articles/{id}/versions', [AuthorArticleController::class, 'versions'])
+            ->middleware('action-permission:author.articles.versions.view');
+        Route::delete('/articles/{id}', [AuthorArticleController::class, 'destroy'])
+            ->middleware('action-permission:author.articles.delete');
+        Route::get('/media', [AuthorArticleController::class, 'mediaIndex'])
+            ->middleware('action-permission:author.media.view');
+        Route::post('/media', [AuthorArticleController::class, 'mediaStore'])
+            ->middleware('action-permission:author.media.upload');
+        Route::get('/feedback', [ArticleFeedbackController::class, 'authorIndex'])
+            ->middleware('action-permission:author.activities.view');
     });
 
 
 
     Route::middleware(['role:reviewer,admin'])->prefix('reviewer')->group(function () {
-        Route::get('/articles', function () {
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Pending articles for review',
-                'data' => ['articles' => []]
-            ]);
-        });
-
-        Route::post('/articles/{id}/approve', function ($id) {
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Article approved',
-            ]);
-        });
-
-        Route::post('/articles/{id}/reject', function ($id) {
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Article rejected',
-            ]);
-        });
+        Route::get('/dashboard', [ReviewerArticleController::class, 'dashboard'])
+            ->middleware('action-permission:reviewer.dashboard.view');
+        Route::get('/activities', [ReviewerArticleController::class, 'activities'])
+            ->middleware('action-permission:reviewer.activities.view');
+        Route::get('/articles', [ReviewerArticleController::class, 'index'])
+            ->middleware('action-permission:reviewer.review.queue.view');
+        Route::get('/articles/{id}', [ReviewerArticleController::class, 'show'])
+            ->middleware('action-permission:reviewer.review.detail.view');
+        Route::post('/articles/{id}/approve', [ReviewerArticleController::class, 'approve'])
+            ->middleware('action-permission:reviewer.review.approve');
+        Route::post('/articles/{id}/reject', [ReviewerArticleController::class, 'reject'])
+            ->middleware('action-permission:reviewer.review.reject');
+        Route::get('/feedback', [ArticleFeedbackController::class, 'reviewerIndex'])
+            ->middleware('action-permission:reviewer.activities.view');
     });
 
 
 
-    Route::prefix('user')->group(function () {
-        // Browse Articles
-        Route::get('/articles', function () {
-            return response()->json([
-                'status' => 'success',
-                'message' => 'User can browse articles',
-                'data' => ['articles' => []]
-            ]);
-        });
-
-        Route::get('/articles/{id}', function ($id) {
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Article details retrieved',
-                'data' => ['article' => null]
-            ]);
-        });
-
-        // Comments
-        Route::post('/comments', function () {
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Comment created',
-            ]);
-        });
-
-        // Likes & Bookmarks
-        Route::post('/articles/{id}/like', function ($id) {
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Article liked',
-            ]);
-        });
-
-        Route::post('/articles/{id}/bookmark', function ($id) {
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Article bookmarked',
-            ]);
-        });
-
-        Route::get('/bookmarks', function () {
-            return response()->json([
-                'status' => 'success',
-                'message' => 'User bookmarks retrieved',
-                'data' => ['bookmarks' => []]
-            ]);
-        });
+    Route::middleware(['role:user,admin'])->prefix('user')->group(function () {
+        Route::get('/articles', [ReaderArticleController::class, 'index']);
+        Route::get('/articles/insights', [ReaderArticleController::class, 'insights']);
+        Route::get('/articles/{identifier}/comments', [ReaderArticleController::class, 'comments']);
+        Route::post('/articles/{identifier}/comments', [ReaderArticleController::class, 'storeComment']);
+        Route::post('/articles/{identifier}/like', [ReaderArticleController::class, 'toggleLike']);
+        Route::post('/articles/{identifier}/bookmark', [ReaderArticleController::class, 'toggleBookmark']);
+        Route::post('/articles/{identifier}/rating', [ReaderArticleController::class, 'rate']);
+        Route::get('/articles/{identifier}', [ReaderArticleController::class, 'show']);
+        Route::get('/bookmarks', [ReaderArticleController::class, 'bookmarks']);
     });
 });
 
@@ -175,6 +181,6 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::fallback(function () {
     return response()->json([
         'status' => 'error',
-        'message' => 'API endpoint not found',
+        'message' => 'Endpoint API tidak ditemukan.',
     ], 404);
 });

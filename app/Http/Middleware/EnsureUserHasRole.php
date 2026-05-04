@@ -12,14 +12,14 @@ class EnsureUserHasRole
         if (!$request->user()) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Unauthorized. Please login first.',
+                'message' => 'Silakan login terlebih dahulu.',
             ], 401);
         }
 
         if (!in_array($request->user()->role, $roles)) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Forbidden. You do not have permission to access this resource.',
+                'message' => 'Anda tidak memiliki akses ke halaman ini.',
             ], 403);
         }
 
