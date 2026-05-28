@@ -7,6 +7,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use App\Support\CachedLookups;
+use App\Support\ContentSanitizer;
 
 class AdminCategoryController extends Controller
 {
@@ -59,6 +61,9 @@ class AdminCategoryController extends Controller
         return response()->json([
             'status' => 'success',
             'message' => 'Detail kategori berhasil dimuat.',
+            'id' => $category['id'],
+            'name' => $category['name'],
+            'slug' => $category['slug'],
             'data' => [
                 'category' => $category,
             ],
@@ -74,7 +79,10 @@ class AdminCategoryController extends Controller
             'is_active' => ['nullable', 'boolean'],
         ]);
 
-        $name = trim($validated['name']);
+        $name = ContentSanitizer::sanitizePlainText($validated['name']);
+        $description = filled($validated['description'] ?? null)
+            ? ContentSanitizer::sanitizePlainText($validated['description'])
+            : null;
         $slugSource = trim((string) ($validated['slug'] ?? $name));
         $slug = $this->makeUniqueSlug($slugSource);
         $now = now();
@@ -82,17 +90,24 @@ class AdminCategoryController extends Controller
         $categoryId = DB::table('categories')->insertGetId([
             'name' => $name,
             'slug' => $slug,
-            'description' => $validated['description'] ?? null,
+            'description' => $description,
             'is_active' => (bool) ($validated['is_active'] ?? true),
             'created_at' => $now,
             'updated_at' => $now,
         ]);
 
+        CachedLookups::forgetActiveCategories();
+
+        $created = $this->fetchCategoryById($categoryId);
+
         return response()->json([
             'status' => 'success',
             'message' => 'Kategori berhasil dibuat.',
+            'id' => $created['id'],
+            'name' => $created['name'],
+            'slug' => $created['slug'],
             'data' => [
-                'category' => $this->fetchCategoryById($categoryId),
+                'category' => $created,
             ],
         ], 201);
     }
@@ -127,7 +142,7 @@ class AdminCategoryController extends Controller
             : (string) $existingCategory->name;
 
         if (array_key_exists('name', $validated)) {
-            $updates['name'] = $nextName;
+            $updates['name'] = ContentSanitizer::sanitizePlainText($nextName);
         }
 
         if (array_key_exists('slug', $validated)) {
@@ -138,7 +153,9 @@ class AdminCategoryController extends Controller
         }
 
         if (array_key_exists('description', $validated)) {
-            $updates['description'] = $validated['description'];
+            $updates['description'] = filled($validated['description'] ?? null)
+                ? ContentSanitizer::sanitizePlainText($validated['description'])
+                : null;
         }
 
         if (array_key_exists('is_active', $validated)) {
@@ -148,6 +165,8 @@ class AdminCategoryController extends Controller
         $updates['updated_at'] = now();
 
         DB::table('categories')->where('id', $id)->update($updates);
+
+        CachedLookups::forgetActiveCategories();
 
         return response()->json([
             'status' => 'success',
@@ -170,6 +189,8 @@ class AdminCategoryController extends Controller
         }
 
         DB::table('categories')->where('id', $id)->delete();
+
+        CachedLookups::forgetActiveCategories();
 
         return response()->json([
             'status' => 'success',

@@ -123,4 +123,15 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Demo Seeder Guard
+    |--------------------------------------------------------------------------
+    |
+    | Flag ini dipakai untuk mencegah data demo seeded ke environment
+    | production secara tidak sengaja.
+    |
+    */
+    'allow_demo_seeders' => (bool) env('APP_ALLOW_DEMO_SEEDERS', false),
+
 ];

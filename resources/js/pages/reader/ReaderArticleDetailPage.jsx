@@ -5,21 +5,8 @@ import { apiRequest } from '../../lib/api';
 import { getToken } from '../../lib/auth';
 import { normalizeRichText, sanitizeHtml, stripHtml } from '../../lib/html';
 import { useI18n } from '../../lib/i18n';
+import { articleImageUrl } from '../../lib/media';
 import { useErrorNotification, useNotify } from '../../lib/notify';
-
-function resolveImageUrl(value) {
-    if (!value) return '';
-
-    if (/^https?:\/\//i.test(value) || value.startsWith('data:') || value.startsWith('/')) {
-        return value;
-    }
-
-    if (value.startsWith('storage/')) {
-        return `/${value}`;
-    }
-
-    return `/storage/${value.replace(/^\/+/, '')}`;
-}
 
 function formatDateTime(value, localeTag) {
     if (!value) return '-';
@@ -244,7 +231,7 @@ export default function ReaderArticleDetailPage() {
     const sanitizedContent = useMemo(() => sanitizeHtml(normalizedContent), [normalizedContent]);
     const contentText = useMemo(() => stripHtml(normalizedContent), [normalizedContent]);
     const hasContent = contentText.trim().length > 0;
-    const coverImage = resolveImageUrl(article?.featured_image || '');
+    const coverImage = articleImageUrl(article);
     const estimatedReadMinutes = useMemo(() => {
         const words = contentText.split(/\s+/).filter(Boolean).length;
         return Math.max(1, Math.ceil(words / 190));
@@ -274,7 +261,7 @@ export default function ReaderArticleDetailPage() {
 
                         <div className="reader-detail-cover mt-5 rounded-xl border border-slate-200 overflow-hidden bg-slate-100 h-[380px] md:h-[440px]">
                             {coverImage ? (
-                                <img src={coverImage} alt={article.featured_image_alt || article.title} className="w-full h-full object-cover" />
+                                <img src={coverImage} alt={article.featured_image_alt || article.title} className="w-full h-full object-cover" decoding="async" />
                             ) : (
                                 <div className="w-full h-full bg-gradient-to-br from-slate-200 via-slate-100 to-slate-300" />
                             )}
@@ -407,7 +394,7 @@ export default function ReaderArticleDetailPage() {
                                 <Link key={item.id} to={`/reader/articles/${item.slug || item.id}`} className="reader-related-card rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden hover:shadow-md transition-shadow">
                                 <div className="h-28 bg-slate-100">
                                     {item.featured_image ? (
-                                        <img src={resolveImageUrl(item.featured_image)} alt={item.title} className="w-full h-full object-cover" />
+                                        <img src={articleImageUrl(item)} alt={item.title} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                                     ) : (
                                         <div className="w-full h-full bg-gradient-to-br from-slate-200 via-slate-100 to-slate-300" />
                                     )}

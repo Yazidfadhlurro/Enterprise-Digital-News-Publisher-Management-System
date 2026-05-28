@@ -3,7 +3,7 @@ import AdminShell from '../../components/AdminShell';
 import { apiRequest } from '../../lib/api';
 import { getToken, getUser } from '../../lib/auth';
 import { useI18n } from '../../lib/i18n';
-import { useErrorNotification } from '../../lib/notify';
+import { useErrorNotification, useNotify } from '../../lib/notify';
 
 const defaultUserForm = {
     name: '',
@@ -12,6 +12,13 @@ const defaultUserForm = {
     assigned_reviewer_id: '',
     password: '',
     password_confirmation: '',
+};
+
+const defaultInviteForm = {
+    email: '',
+    role: 'reviewer',
+    expires_in_days: '7',
+    note: '',
 };
 
 function formatDate(value, localeTag) {
@@ -89,8 +96,12 @@ export default function AdminUsersPage() {
     const [selectedUserId, setSelectedUserId] = useState(null);
     const [userForm, setUserForm] = useState(defaultUserForm);
     const [submitting, setSubmitting] = useState(false);
+    const [inviteForm, setInviteForm] = useState(defaultInviteForm);
+    const [inviteLink, setInviteLink] = useState('');
+    const [inviteSubmitting, setInviteSubmitting] = useState(false);
 
     useErrorNotification(error, setError);
+    const notify = useNotify();
 
     const currentUser = getUser();
 
@@ -171,12 +182,22 @@ export default function AdminUsersPage() {
         setPanelMode(null);
         setSelectedUserId(null);
         setUserForm(defaultUserForm);
+        setInviteForm(defaultInviteForm);
+        setInviteLink('');
     }
 
     function openCreatePanel() {
         setError('');
+        setInviteLink('');
         setUserForm(defaultUserForm);
         setPanelMode('create');
+    }
+
+    function openInvitePanel() {
+        setError('');
+        setInviteLink('');
+        setInviteForm(defaultInviteForm);
+        setPanelMode('invite');
     }
 
     async function openEditPanel(userId) {
@@ -223,6 +244,60 @@ export default function AdminUsersPage() {
             ...previous,
             [name]: value,
         }));
+    }
+
+    function handleInviteFormChange(event) {
+        const { name, value } = event.target;
+
+        setInviteForm((previous) => ({
+            ...previous,
+            [name]: value,
+        }));
+    }
+
+    async function submitInviteForm(event) {
+        event.preventDefault();
+
+        const token = getToken();
+        const role = inviteForm.role;
+        const expiresInDays = Number(inviteForm.expires_in_days || 7);
+
+        if (!['author', 'reviewer'].includes(role)) {
+            setError(t('admin.invites.errorRole', 'Role undangan harus Penulis atau Editor.'));
+            return;
+        }
+
+        setInviteSubmitting(true);
+        setError('');
+
+        try {
+            const payload = await apiRequest('/admin/invites', {
+                method: 'POST',
+                token,
+                body: {
+                    role,
+                    email: inviteForm.email.trim() || null,
+                    expires_in_days: expiresInDays,
+                    note: inviteForm.note.trim() || null,
+                },
+            });
+
+            if (payload?.status !== 'success') {
+                throw new Error(payload?.message || t('admin.invites.errorSave', 'Gagal membuat undangan.'));
+            }
+
+            const inviteUrl = payload?.data?.invite_url || '';
+            setInviteLink(inviteUrl);
+            notify.success(t('admin.invites.success', 'Link undangan berhasil dibuat.'));
+
+            if (inviteUrl && navigator?.clipboard?.writeText) {
+                navigator.clipboard.writeText(inviteUrl).catch(() => {});
+            }
+        } catch (err) {
+            setError(err.message || t('admin.invites.errorSaveDefault', 'Terjadi kesalahan saat membuat undangan.'));
+        } finally {
+            setInviteSubmitting(false);
+        }
     }
 
     async function submitUserForm(event) {
@@ -383,13 +458,22 @@ export default function AdminUsersPage() {
             title={t('admin.users.title', 'Manajemen User')}
             subtitle={totalLabel}
             action={(
-                <button
-                    type="button"
-                    className="portal-btn portal-btn-primary"
-                    onClick={openCreatePanel}
-                >
-                    {t('admin.users.addButton', '+ Tambah User')}
-                </button>
+                <div className="flex flex-wrap items-center gap-2">
+                    <button
+                        type="button"
+                        className="portal-btn portal-btn-secondary"
+                        onClick={openInvitePanel}
+                    >
+                        {t('admin.invites.addButton', 'Buat Invite')}
+                    </button>
+                    <button
+                        type="button"
+                        className="portal-btn portal-btn-primary"
+                        onClick={openCreatePanel}
+                    >
+                        {t('admin.users.addButton', '+ Tambah User')}
+                    </button>
+                </div>
             )}
         >
             <div className="admin-users-page">
@@ -399,6 +483,8 @@ export default function AdminUsersPage() {
                         <h3 className="text-base font-semibold text-slate-900">
                             {panelMode === 'edit'
                                 ? t('admin.users.panelEditTitle', 'Edit User')
+                                : panelMode === 'invite'
+                                    ? t('admin.invites.panelTitle', 'Buat Undangan Internal')
                                 : t('admin.users.panelCreateTitle', 'Tambah User')}
                         </h3>
                         <button
@@ -410,6 +496,96 @@ export default function AdminUsersPage() {
                         </button>
                     </div>
 
+                    {panelMode === 'invite' ? (
+                        <form onSubmit={submitInviteForm} className="space-y-3">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div>
+                                    <label className="block text-[11px] uppercase tracking-wide text-slate-500 mb-1">{t('table.role', 'Role')}</label>
+                                    <select
+                                        name="role"
+                                        value={inviteForm.role}
+                                        onChange={handleInviteFormChange}
+                                        className="admin-page-input w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-blue-600 focus:outline-none"
+                                    >
+                                        <option value="reviewer">{t('role.editor', 'Editor')}</option>
+                                        <option value="author">{t('role.author', 'Penulis')}</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-[11px] uppercase tracking-wide text-slate-500 mb-1">{t('admin.invites.expiresInDays', 'Masa Berlaku (Hari)')}</label>
+                                    <input
+                                        type="number"
+                                        name="expires_in_days"
+                                        value={inviteForm.expires_in_days}
+                                        onChange={handleInviteFormChange}
+                                        className="admin-page-input w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-blue-600 focus:outline-none"
+                                        min="1"
+                                        max="30"
+                                    />
+                                </div>
+                                <div className="md:col-span-2">
+                                    <label className="block text-[11px] uppercase tracking-wide text-slate-500 mb-1">{t('table.email', 'Email')} {t('common.optional', '(Opsional)')}</label>
+                                    <input
+                                        type="email"
+                                        name="email"
+                                        value={inviteForm.email}
+                                        onChange={handleInviteFormChange}
+                                        className="admin-page-input w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-blue-600 focus:outline-none"
+                                        placeholder={t('admin.invites.emailPlaceholder', 'Kosongkan jika undangan umum')}
+                                    />
+                                </div>
+                                <div className="md:col-span-2">
+                                    <label className="block text-[11px] uppercase tracking-wide text-slate-500 mb-1">{t('common.note', 'Catatan')} {t('common.optional', '(Opsional)')}</label>
+                                    <textarea
+                                        name="note"
+                                        value={inviteForm.note}
+                                        onChange={handleInviteFormChange}
+                                        className="admin-page-input w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-blue-600 focus:outline-none"
+                                        rows="3"
+                                        placeholder={t('admin.invites.notePlaceholder', 'Contoh penggunaan: editor rubrik ekonomi')}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                                <button
+                                    type="submit"
+                                    disabled={inviteSubmitting}
+                                    className="portal-btn portal-btn-primary"
+                                >
+                                    {inviteSubmitting ? t('common.saving', 'Menyimpan...') : t('admin.invites.createButton', 'Buat Link Undangan')}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={closePanel}
+                                    className="portal-btn portal-btn-secondary"
+                                >
+                                    {t('common.cancel', 'Batal')}
+                                </button>
+                            </div>
+
+                            {inviteLink ? (
+                                <div className="mt-4 rounded-xl border border-blue-200 bg-blue-50 p-3">
+                                    <div className="text-xs uppercase tracking-wide text-blue-700 mb-2">{t('admin.invites.generatedLink', 'Link Undangan')}</div>
+                                    <div className="flex flex-col gap-2 md:flex-row md:items-center">
+                                        <input
+                                            type="text"
+                                            value={inviteLink}
+                                            readOnly
+                                            className="w-full rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm text-slate-700"
+                                        />
+                                        <button
+                                            type="button"
+                                            className="portal-btn portal-btn-secondary"
+                                            onClick={() => navigator?.clipboard?.writeText(inviteLink)}
+                                        >
+                                            {t('common.copy', 'Salin')}
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : null}
+                        </form>
+                    ) : (
                     <form onSubmit={submitUserForm} className="space-y-3">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                             <div>
@@ -536,6 +712,7 @@ export default function AdminUsersPage() {
                             </button>
                         </div>
                     </form>
+                    )}
                 </section>
             ) : null}
 

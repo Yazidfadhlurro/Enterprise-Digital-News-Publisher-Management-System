@@ -22,9 +22,12 @@ const ALLOWED_TAGS = [
     'a',
     'span',
     'mark',
+    'img',
+    'video',
+    'source',
 ];
 
-const ALLOWED_ATTR = ['href', 'target', 'rel', 'class', 'style'];
+const ALLOWED_ATTR = ['href', 'target', 'rel', 'class', 'style', 'src', 'alt', 'title', 'controls', 'preload', 'poster', 'type'];
 const COLOR_REGEX = /^(transparent|#[0-9a-f]{3}|#[0-9a-f]{6}|#[0-9a-f]{8}|rgb\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*\)|rgba\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*,\s*(0|1|0?\.\d+)\s*\)|hsl\(\s*\d+\s*,\s*\d+%\s*,\s*\d+%\s*\)|hsla\(\s*\d+\s*,\s*\d+%\s*,\s*\d+%\s*,\s*(0|1|0?\.\d+)\s*\))$/i;
 const FONT_FAMILIES = new Set([
     'calibri',
@@ -55,10 +58,46 @@ const ALLOWED_STYLE_RULES = {
         return families.some((family) => FONT_FAMILIES.has(family.toLowerCase()));
     },
 };
-let styleHookRegistered = false;
+let hooksRegistered = false;
 
-function ensureStyleHook() {
-    if (styleHookRegistered) return;
+const REL_PRIORITY = ['nofollow', 'noopener', 'noreferrer'];
+
+function isExternalHref(href) {
+    const normalized = String(href || '').trim();
+    if (!normalized) return false;
+
+    const lowerHref = normalized.toLowerCase();
+    if (lowerHref.startsWith('#') || lowerHref.startsWith('mailto:') || lowerHref.startsWith('tel:')) {
+        return false;
+    }
+
+    if (typeof window === 'undefined' || !window.location) {
+        return true;
+    }
+
+    try {
+        const url = new URL(normalized, window.location.href);
+        return url.origin !== window.location.origin;
+    } catch (_) {
+        return false;
+    }
+}
+
+function mergeRelTokens(existingTokens, additionalTokens) {
+    const merged = new Set([
+        ...(existingTokens || []),
+        ...(additionalTokens || []),
+    ]);
+
+    const prioritized = REL_PRIORITY.filter((token) => merged.has(token));
+    REL_PRIORITY.forEach((token) => merged.delete(token));
+    const rest = Array.from(merged).sort();
+
+    return [...prioritized, ...rest].join(' ').trim();
+}
+
+function ensurePurifyHooks() {
+    if (hooksRegistered) return;
 
     DOMPurify.addHook('uponSanitizeAttribute', (_node, data) => {
         if (data.attrName === 'style') {
@@ -108,7 +147,47 @@ function ensureStyleHook() {
         }
     });
 
-    styleHookRegistered = true;
+    DOMPurify.addHook('afterSanitizeAttributes', (node) => {
+        if (!node || !node.tagName) return;
+
+        if (String(node.tagName).toLowerCase() !== 'a') {
+            return;
+        }
+
+        const href = node.getAttribute('href');
+        if (!href) {
+            return;
+        }
+
+        const target = String(node.getAttribute('target') || '').trim();
+        if (target && target.toLowerCase() !== '_blank') {
+            node.removeAttribute('target');
+        }
+
+        const existingRel = String(node.getAttribute('rel') || '')
+            .split(/\s+/)
+            .map((part) => part.trim().toLowerCase())
+            .filter(Boolean);
+
+        const additions = [];
+
+        if (isExternalHref(href)) {
+            additions.push('nofollow');
+        }
+
+        if (String(node.getAttribute('target') || '').toLowerCase() === '_blank') {
+            additions.push('noopener', 'noreferrer');
+        }
+
+        const nextRel = mergeRelTokens(existingRel, additions);
+        if (nextRel) {
+            node.setAttribute('rel', nextRel);
+        } else {
+            node.removeAttribute('rel');
+        }
+    });
+
+    hooksRegistered = true;
 }
 
 export function normalizeRichText(value) {
@@ -139,7 +218,7 @@ export function normalizeRichText(value) {
 export function sanitizeHtml(value) {
     if (!value) return '';
 
-    ensureStyleHook();
+    ensurePurifyHooks();
 
     return DOMPurify.sanitize(String(value), {
         ALLOWED_TAGS,

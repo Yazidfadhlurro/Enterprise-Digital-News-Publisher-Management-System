@@ -1,0 +1,83 @@
+name: CI — Postgres
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_DB: homestead
+          POSTGRES_USER: homestead
+          POSTGRES_PASSWORD: secret
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U homestead" --health-interval 10s --health-timeout 5s --health-retries 5
+    env:
+      APP_ENV: testing
+      APP_DEBUG: 'true'
+      APP_URL: http://127.0.0.1
+      DB_CONNECTION: pgsql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_DATABASE: homestead
+      DB_USERNAME: homestead
+      DB_PASSWORD: secret
+      APP_ALLOW_DEMO_SEEDERS: 'true'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, intl, pdo, pdo_pgsql, xml, zip
+
+      - name: Cache Composer
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
+      - name: Install Composer dependencies
+        run: composer install --no-progress --no-suggest --prefer-dist --optimize-autoloader
+
+      - name: Copy example env
+        run: cp .env.example .env
+
+      - name: Generate app key
+        run: php artisan key:generate --ansi --no-interaction
+
+      - name: Wait for Postgres to be ready
+        run: |
+          for i in {1..15}; do
+            pg_isready -h 127.0.0.1 -p 5432 -U homestead && break
+            sleep 2
+          done
+
+      - name: Run migrations
+        run: php artisan migrate --force --no-interaction
+
+      - name: Seed demo data
+        run: php artisan db:seed --class=DatabaseSeeder --force
+
+      - name: Run tests
+        run: php artisan test --verbose --no-interaction
+        env:
+          DB_CONNECTION: pgsql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+          DB_DATABASE: homestead
+          DB_USERNAME: homestead
+          DB_PASSWORD: secret

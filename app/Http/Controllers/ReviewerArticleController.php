@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Support\EditorialActivityLogger;
-use Carbon\Carbon;
+use App\Support\ContentSanitizer;
+use App\Support\ReaderCache;
+use Illuminate\Support\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -97,13 +99,15 @@ class ReviewerArticleController extends Controller
         }
 
         if ($search !== '') {
-            $query->where(function ($subQuery) use ($search) {
+            $likeTerm = '%'.ContentSanitizer::escapeLikeWildcards($search, '!').'%';
+
+            $query->where(function ($subQuery) use ($likeTerm) {
                 $subQuery
-                    ->where('a.title', 'like', "%{$search}%")
-                    ->orWhere('actor.name', 'like', "%{$search}%")
-                    ->orWhere('ea.to_stage', 'like', "%{$search}%")
-                    ->orWhere('ea.from_stage', 'like', "%{$search}%")
-                    ->orWhere('ea.note', 'like', "%{$search}%");
+                    ->whereRaw("a.title LIKE ? ESCAPE '!'", [$likeTerm])
+                    ->orWhereRaw("actor.name LIKE ? ESCAPE '!'", [$likeTerm])
+                    ->orWhereRaw("ea.to_stage LIKE ? ESCAPE '!'", [$likeTerm])
+                    ->orWhereRaw("ea.from_stage LIKE ? ESCAPE '!'", [$likeTerm])
+                    ->orWhereRaw("ea.note LIKE ? ESCAPE '!'", [$likeTerm]);
             });
         }
 
@@ -213,11 +217,13 @@ class ReviewerArticleController extends Controller
         }
 
         if ($search !== '') {
-            $query->where(function ($subQuery) use ($search) {
+            $likeTerm = '%'.ContentSanitizer::escapeLikeWildcards($search, '!').'%';
+
+            $query->where(function ($subQuery) use ($likeTerm) {
                 $subQuery
-                    ->where('a.title', 'like', "%{$search}%")
-                    ->orWhere('u.name', 'like', "%{$search}%")
-                    ->orWhere('c.name', 'like', "%{$search}%");
+                    ->whereRaw("a.title LIKE ? ESCAPE '!'", [$likeTerm])
+                    ->orWhereRaw("u.name LIKE ? ESCAPE '!'", [$likeTerm])
+                    ->orWhereRaw("c.name LIKE ? ESCAPE '!'", [$likeTerm]);
             });
         }
 
@@ -344,7 +350,8 @@ class ReviewerArticleController extends Controller
             ], 422);
         }
 
-        $note = $request->input('review_notes');
+        $note = ContentSanitizer::sanitizePlainText($request->input('review_notes'));
+        $note = $note === '' ? null : $note;
         $now = now();
         $actor = $request->user();
         $actorId = $actor ? (int) $actor->id : null;
@@ -372,6 +379,8 @@ class ReviewerArticleController extends Controller
             );
         });
 
+        ReaderCache::forgetInsights();
+
         return response()->json([
             'status' => 'success',
             'message' => 'Berita berhasil dipublish.',
@@ -381,7 +390,7 @@ class ReviewerArticleController extends Controller
     public function reject(Request $request, int $id): JsonResponse
     {
         $request->validate([
-            'review_notes' => ['nullable', 'string', 'max:500'],
+            'review_notes' => ['required', 'string', 'min:10', 'max:500'],
         ]);
 
         $article = DB::table('articles')->where('id', $id)->first();
@@ -407,7 +416,8 @@ class ReviewerArticleController extends Controller
             ], 403);
         }
 
-        $note = $request->input('review_notes');
+        $note = ContentSanitizer::sanitizePlainText($request->input('review_notes'));
+        $note = $note === '' ? null : $note;
         $now = now();
         $actor = $request->user();
         $actorId = $actor ? (int) $actor->id : null;

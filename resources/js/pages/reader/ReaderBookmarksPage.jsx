@@ -4,21 +4,8 @@ import ReaderShell from '../../components/ReaderShell';
 import { apiRequest } from '../../lib/api';
 import { getToken } from '../../lib/auth';
 import { useI18n } from '../../lib/i18n';
+import { articleImageUrl } from '../../lib/media';
 import { useErrorNotification, useNotify } from '../../lib/notify';
-
-function resolveImageUrl(value) {
-    if (!value) return '';
-
-    if (/^https?:\/\//i.test(value) || value.startsWith('data:') || value.startsWith('/')) {
-        return value;
-    }
-
-    if (value.startsWith('storage/')) {
-        return `/${value}`;
-    }
-
-    return `/storage/${value.replace(/^\/+/, '')}`;
-}
 
 function formatDate(value, localeTag) {
     if (!value) return '-';
@@ -288,7 +275,7 @@ export default function ReaderBookmarksPage() {
 
                                     <Link to={`/reader/articles/${featuredBookmark.article?.slug || featuredBookmark.article?.id}`} className="reader-bookmark-feature-media rounded-xl overflow-hidden bg-slate-100 h-[240px] lg:h-auto">
                                         {featuredBookmark.article?.featured_image ? (
-                                            <img src={resolveImageUrl(featuredBookmark.article.featured_image)} alt={featuredBookmark.article.featured_image_alt || featuredBookmark.article.title || '-'} className="w-full h-full object-cover" />
+                                            <img src={articleImageUrl(featuredBookmark.article)} alt={featuredBookmark.article.featured_image_alt || featuredBookmark.article.title || '-'} className="w-full h-full object-cover" decoding="async" />
                                         ) : (
                                             <div className="w-full h-full bg-gradient-to-br from-slate-200 via-slate-100 to-slate-300" />
                                         )}
@@ -309,13 +296,13 @@ export default function ReaderBookmarksPage() {
                                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                                     {listBookmarks.map((row) => {
                                         const article = row.article || {};
-                                        const imageUrl = resolveImageUrl(article.featured_image || '');
+                                        const imageUrl = articleImageUrl(article);
 
                                         return (
                                             <article key={row.bookmark_id} className="reader-bookmark-card rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
                                                 <Link to={`/reader/articles/${article.slug || article.id}`} className="reader-bookmark-card-media block h-44 bg-slate-100">
                                                     {imageUrl ? (
-                                                        <img src={imageUrl} alt={article.featured_image_alt || article.title || '-'} className="w-full h-full object-cover" />
+                                                        <img src={imageUrl} alt={article.featured_image_alt || article.title || '-'} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                                                     ) : (
                                                         <div className="w-full h-full bg-gradient-to-br from-slate-200 via-slate-100 to-slate-300" />
                                                     )}

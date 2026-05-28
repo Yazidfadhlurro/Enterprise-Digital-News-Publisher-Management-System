@@ -6,8 +6,8 @@ use Tests\TestCase;
 
 class HealthCheckTest extends TestCase
 {
-    public function test_health_endpoint_returns_success_response(): void
+    public function test_health_endpoint_is_available(): void
     {
-        $this->get('/up')->assertOk();
+        $this->getJson('/up')->assertOk();
     }
 }

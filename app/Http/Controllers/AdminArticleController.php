@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Support\EditorialActivityLogger;
+use App\Support\ContentSanitizer;
+use App\Support\ReaderCache;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -45,11 +47,13 @@ class AdminArticleController extends Controller
             );
 
         if ($search !== '') {
-            $query->where(function ($subQuery) use ($search) {
+            $likeTerm = '%'.ContentSanitizer::escapeLikeWildcards($search, '!').'%';
+
+            $query->where(function ($subQuery) use ($likeTerm) {
                 $subQuery
-                    ->where('a.title', 'like', "%{$search}%")
-                    ->orWhere('u.name', 'like', "%{$search}%")
-                    ->orWhere('c.name', 'like', "%{$search}%");
+                    ->whereRaw("a.title LIKE ? ESCAPE '!'", [$likeTerm])
+                    ->orWhereRaw("u.name LIKE ? ESCAPE '!'", [$likeTerm])
+                    ->orWhereRaw("c.name LIKE ? ESCAPE '!'", [$likeTerm]);
             });
         }
 
@@ -124,56 +128,84 @@ class AdminArticleController extends Controller
             'excerpt' => ['nullable', 'string'],
             'content' => ['required', 'string'],
             'category_id' => ['nullable', 'integer', Rule::exists('categories', 'id')],
-            'author_id' => ['nullable', 'integer', Rule::exists('users', 'id')],
+            'author_id' => ['nullable', 'integer', Rule::exists('users', 'id')->where('role', 'author')],
             'status' => ['nullable', Rule::in(self::ALLOWED_STATUSES)],
             'reviewer_id' => ['nullable', 'integer', Rule::exists('users', 'id')],
             'review_notes' => ['nullable', 'string'],
             'published_at' => ['nullable', 'date'],
             'featured_image' => ['nullable', 'string', 'max:255'],
             'is_featured' => ['nullable', 'boolean'],
+            'meta_title' => ['nullable', 'string', 'max:70'],
+            'meta_description' => ['nullable', 'string', 'max:160'],
+            'og_image' => ['nullable', 'string', 'max:255'],
+            'canonical_url' => ['nullable', 'url', 'max:255'],
         ]);
 
         $status = $validated['status'] ?? 'draft';
-        $title = trim($validated['title']);
+        $title = ContentSanitizer::sanitizePlainText($validated['title']);
         $sourceSlug = trim((string) ($validated['slug'] ?? $title));
         $slug = $this->makeUniqueSlug($sourceSlug);
+        $excerpt = filled($validated['excerpt'] ?? null)
+            ? ContentSanitizer::sanitizePlainText($validated['excerpt'])
+            : null;
+        $content = ContentSanitizer::sanitizeRichText($validated['content']);
+        $reviewNotes = filled($validated['review_notes'] ?? null)
+            ? ContentSanitizer::sanitizePlainText($validated['review_notes'])
+            : null;
+        $featuredImageInput = $validated['featured_image'] ?? null;
+        $featuredImage = ContentSanitizer::sanitizeMediaPath($featuredImageInput);
+        if ($featuredImageInput !== null && trim((string) $featuredImageInput) !== '' && $featuredImage === null) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Gambar unggulan tidak valid.',
+            ], 422);
+        }
         $publishedAt = $this->resolvePublishedAt($status, $validated['published_at'] ?? null, null);
         $now = now();
         $actor = $request->user();
         $actorId = $actor ? (int) $actor->id : null;
         $actorRole = $actor && isset($actor->role) ? (string) $actor->role : null;
 
-        $articleId = DB::transaction(function () use ($validated, $request, $title, $slug, $status, $publishedAt, $now, $actorId, $actorRole) {
+        $articleId = DB::transaction(function () use ($validated, $request, $title, $slug, $status, $publishedAt, $now, $actorId, $actorRole, $excerpt, $content, $featuredImage, $reviewNotes) {
             $createdArticleId = DB::table('articles')->insertGetId([
                 'author_id' => (int) ($validated['author_id'] ?? $request->user()->id),
                 'category_id' => $validated['category_id'] ?? null,
                 'title' => $title,
                 'slug' => $slug,
-                'excerpt' => $validated['excerpt'] ?? null,
-                'content' => $validated['content'],
-                'featured_image' => $validated['featured_image'] ?? null,
+                'excerpt' => $excerpt,
+                'content' => $content,
+                'featured_image' => $featuredImage,
                 'status' => $status,
                 'reviewer_id' => $validated['reviewer_id'] ?? null,
-                'review_notes' => $validated['review_notes'] ?? null,
+                'review_notes' => $reviewNotes,
                 'published_at' => $publishedAt,
                 'is_featured' => (bool) ($validated['is_featured'] ?? false),
+                'meta_title' => filled($validated['meta_title'] ?? null) ? ContentSanitizer::sanitizePlainText($validated['meta_title']) : null,
+                'meta_description' => filled($validated['meta_description'] ?? null) ? ContentSanitizer::sanitizePlainText($validated['meta_description']) : null,
+                'og_image' => ContentSanitizer::sanitizeMediaPath($validated['og_image'] ?? null),
+                'canonical_url' => filled($validated['canonical_url'] ?? null) ? trim((string) $validated['canonical_url']) : null,
                 'views_count' => 0,
                 'created_at' => $now,
                 'updated_at' => $now,
             ]);
 
-            EditorialActivityLogger::logTransition(
+                EditorialActivityLogger::logTransition(
                 $createdArticleId,
                 null,
                 $status,
                 $actorId,
                 $actorRole,
-                $validated['review_notes'] ?? null,
+                $reviewNotes,
                 $now
             );
 
             return $createdArticleId;
         });
+
+        if ($status === 'published') {
+            ReaderCache::forgetInsights();
+            ReaderCache::forgetArticleCaches($articleId);
+        }
 
         return response()->json([
             'status' => 'success',
@@ -201,13 +233,17 @@ class AdminArticleController extends Controller
             'excerpt' => ['sometimes', 'nullable', 'string'],
             'content' => ['sometimes', 'required', 'string'],
             'category_id' => ['sometimes', 'nullable', 'integer', Rule::exists('categories', 'id')],
-            'author_id' => ['sometimes', 'nullable', 'integer', Rule::exists('users', 'id')],
+            'author_id' => ['sometimes', 'nullable', 'integer', Rule::exists('users', 'id')->where('role', 'author')],
             'status' => ['sometimes', Rule::in(self::ALLOWED_STATUSES)],
             'reviewer_id' => ['sometimes', 'nullable', 'integer', Rule::exists('users', 'id')],
             'review_notes' => ['sometimes', 'nullable', 'string'],
             'published_at' => ['sometimes', 'nullable', 'date'],
             'featured_image' => ['sometimes', 'nullable', 'string', 'max:255'],
             'is_featured' => ['sometimes', 'boolean'],
+            'meta_title' => ['sometimes', 'nullable', 'string', 'max:70'],
+            'meta_description' => ['sometimes', 'nullable', 'string', 'max:160'],
+            'og_image' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'canonical_url' => ['sometimes', 'nullable', 'url', 'max:255'],
         ]);
 
         if (empty($validated)) {
@@ -218,7 +254,7 @@ class AdminArticleController extends Controller
 
         $updates = [];
         $nextTitle = array_key_exists('title', $validated)
-            ? trim((string) $validated['title'])
+            ? ContentSanitizer::sanitizePlainText($validated['title'])
             : (string) $existingArticle->title;
 
         if (array_key_exists('title', $validated)) {
@@ -233,11 +269,13 @@ class AdminArticleController extends Controller
         }
 
         if (array_key_exists('excerpt', $validated)) {
-            $updates['excerpt'] = $validated['excerpt'];
+            $updates['excerpt'] = filled($validated['excerpt'] ?? null)
+                ? ContentSanitizer::sanitizePlainText($validated['excerpt'])
+                : null;
         }
 
         if (array_key_exists('content', $validated)) {
-            $updates['content'] = $validated['content'];
+            $updates['content'] = ContentSanitizer::sanitizeRichText($validated['content']);
         }
 
         if (array_key_exists('category_id', $validated)) {
@@ -253,20 +291,51 @@ class AdminArticleController extends Controller
         }
 
         if (array_key_exists('review_notes', $validated)) {
-            $updates['review_notes'] = $validated['review_notes'];
+            $updates['review_notes'] = filled($validated['review_notes'] ?? null)
+                ? ContentSanitizer::sanitizePlainText($validated['review_notes'])
+                : null;
         }
 
         if (array_key_exists('featured_image', $validated)) {
-            $updates['featured_image'] = $validated['featured_image'];
+            $featuredImageInput = $validated['featured_image'];
+            $featuredImage = ContentSanitizer::sanitizeMediaPath($featuredImageInput);
+
+            if ($featuredImageInput !== null && trim((string) $featuredImageInput) !== '' && $featuredImage === null) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Gambar unggulan tidak valid.',
+                ], 422);
+            }
+
+            $updates['featured_image'] = $featuredImage;
         }
 
         if (array_key_exists('is_featured', $validated)) {
             $updates['is_featured'] = (bool) $validated['is_featured'];
         }
 
+        if (array_key_exists('meta_title', $validated)) {
+            $updates['meta_title'] = filled($validated['meta_title']) ? ContentSanitizer::sanitizePlainText($validated['meta_title']) : null;
+        }
+
+        if (array_key_exists('meta_description', $validated)) {
+            $updates['meta_description'] = filled($validated['meta_description']) ? ContentSanitizer::sanitizePlainText($validated['meta_description']) : null;
+        }
+
+        if (array_key_exists('og_image', $validated)) {
+            $updates['og_image'] = ContentSanitizer::sanitizeMediaPath($validated['og_image']);
+        }
+
+        if (array_key_exists('canonical_url', $validated)) {
+            $updates['canonical_url'] = filled($validated['canonical_url']) ? trim((string) $validated['canonical_url']) : null;
+        }
+
         $nextStatus = array_key_exists('status', $validated)
             ? $validated['status']
             : $existingArticle->status;
+
+        $wasPublished = (string) $existingArticle->status === 'published';
+        $willBePublished = (string) $nextStatus === 'published';
 
         if (array_key_exists('status', $validated)) {
             $updates['status'] = $nextStatus;
@@ -302,6 +371,11 @@ class AdminArticleController extends Controller
             }
         });
 
+        ReaderCache::forgetArticleCaches($id);
+        if ($wasPublished || $willBePublished) {
+            ReaderCache::forgetInsights();
+        }
+
         return response()->json([
             'status' => 'success',
             'message' => 'Artikel berhasil diperbarui.',
@@ -322,7 +396,14 @@ class AdminArticleController extends Controller
             ], 404);
         }
 
+        $wasPublished = (string) ($article->status ?? '') === 'published';
+
         DB::table('articles')->where('id', $id)->delete();
+
+        ReaderCache::forgetArticleCaches($id);
+        if ($wasPublished) {
+            ReaderCache::forgetInsights();
+        }
 
         return response()->json([
             'status' => 'success',
@@ -351,6 +432,10 @@ class AdminArticleController extends Controller
                 'a.published_at',
                 'a.is_featured',
                 'a.views_count',
+                'a.meta_title',
+                'a.meta_description',
+                'a.og_image',
+                'a.canonical_url',
                 'a.created_at',
                 'a.updated_at',
                 DB::raw("COALESCE(u.name, '-') as author_name"),
@@ -382,6 +467,10 @@ class AdminArticleController extends Controller
             'published_at' => $article->published_at,
             'is_featured' => (bool) $article->is_featured,
             'views_count' => (int) $article->views_count,
+            'meta_title' => $article->meta_title,
+            'meta_description' => $article->meta_description,
+            'og_image' => $article->og_image,
+            'canonical_url' => $article->canonical_url,
             'created_at' => $article->created_at,
             'updated_at' => $article->updated_at,
             'date' => $article->published_at ?? $article->created_at,

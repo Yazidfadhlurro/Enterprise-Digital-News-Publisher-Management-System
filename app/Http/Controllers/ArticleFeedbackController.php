@@ -103,10 +103,12 @@ class ArticleFeedbackController extends Controller
         $this->applyFeedbackVisibilityFilter($query, $hasCommentsTable, $hasRatingsTable);
 
         if ($search !== '') {
-            $query->where(function ($subQuery) use ($search) {
+            $likeTerm = '%'.\App\Support\ContentSanitizer::escapeLikeWildcards($search, '!').'%';
+
+            $query->where(function ($subQuery) use ($likeTerm) {
                 $subQuery
-                    ->where('a.title', 'like', "%{$search}%")
-                    ->orWhere('au.name', 'like', "%{$search}%");
+                    ->whereRaw("a.title LIKE ? ESCAPE '!'", [$likeTerm])
+                    ->orWhereRaw("au.name LIKE ? ESCAPE '!'", [$likeTerm]);
             });
         }
 

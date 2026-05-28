@@ -478,7 +478,7 @@ export default function AdminAssignmentMatrixPage() {
                             type="text"
                             value={searchKeyword}
                             onChange={(event) => setSearchKeyword(event.target.value)}
-                            placeholder={t('admin.assignment.searchPlaceholder', 'Contoh: budi atau editor@portal.com')}
+                            placeholder={t('admin.assignment.searchPlaceholder', 'Cari budi atau editor@portal.com')}
                             className="assignment-input mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-blue-600 focus:outline-none"
                         />
                     </label>

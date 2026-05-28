@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use Carbon\Carbon;
+use Illuminate\Support\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -96,12 +96,12 @@ class AdminActivityController extends Controller
 
         foreach ($activities as $row) {
             fputcsv($stream, [
-                $row['id'],
-                $row['type'],
-                $row['actor'],
-                $row['target'],
-                $row['message'],
-                $row['happened_at'],
+                $this->escapeCsvCell($row['id']),
+                $this->escapeCsvCell($row['type']),
+                $this->escapeCsvCell($row['actor']),
+                $this->escapeCsvCell($row['target']),
+                $this->escapeCsvCell($row['message']),
+                $this->escapeCsvCell($row['happened_at']),
             ]);
         }
 
@@ -251,5 +251,16 @@ class AdminActivityController extends Controller
             } catch (\Throwable) {
             }
         }
+    }
+
+    private function escapeCsvCell($value): string
+    {
+        $text = (string) ($value ?? '');
+
+        if ($text !== '' && preg_match('/^[=+\-@]/', $text)) {
+            return "'" . $text;
+        }
+
+        return $text;
     }
 }

@@ -15,8 +15,7 @@ class EnsureUserHasRole
                 'message' => 'Silakan login terlebih dahulu.',
             ], 401);
         }
-
-        if (!in_array($request->user()->role, $roles)) {
+        if (!in_array($request->user()->role, $roles, true)) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Anda tidak memiliki akses ke halaman ini.',

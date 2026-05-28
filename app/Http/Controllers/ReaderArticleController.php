@@ -9,13 +9,17 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
+use App\Support\CachedLookups;
+use App\Support\ContentSanitizer;
+use App\Support\MediaUrl;
+use App\Support\ReaderCache;
 
 class ReaderArticleController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
         $actor = $request->user();
-        $search = trim((string) $request->query('q', ''));
+        $search = $this->normalizeSearchTerm((string) $request->query('q', ''));
         $categoryId = max(0, (int) $request->query('category_id', 0));
         $featuredOnly = filter_var($request->query('featured', false), FILTER_VALIDATE_BOOLEAN);
 
@@ -43,11 +47,13 @@ class ReaderArticleController extends Controller
             ]);
 
         if ($search !== '') {
-            $query->where(function ($subQuery) use ($search) {
+            $likeTerm = '%'.ContentSanitizer::escapeLikeWildcards($search, '!').'%';
+
+            $query->where(function ($subQuery) use ($likeTerm) {
                 $subQuery
-                    ->where('a.title', 'like', "%{$search}%")
-                    ->orWhere('a.excerpt', 'like', "%{$search}%")
-                    ->orWhere('c.name', 'like', "%{$search}%");
+                    ->whereRaw("a.title LIKE ? ESCAPE '!'", [$likeTerm])
+                    ->orWhereRaw("a.excerpt LIKE ? ESCAPE '!'", [$likeTerm])
+                    ->orWhereRaw("c.name LIKE ? ESCAPE '!'", [$likeTerm]);
             });
         }
 
@@ -80,30 +86,89 @@ class ReaderArticleController extends Controller
         }
 
         $ratingStatsByArticle = collect();
-        if ($articleIds !== []) {
-            $ratingStatsByArticle = DB::table('article_ratings')
-                ->whereIn('article_id', $articleIds)
-                ->select([
-                    'article_id',
-                    DB::raw('COUNT(*) as ratings_total'),
-                    DB::raw('ROUND(AVG(rating), 2) as average_rating'),
-                ])
-                ->groupBy('article_id')
-                ->get()
-                ->keyBy('article_id');
-        }
-
         $commentCounts = collect();
         if ($articleIds !== []) {
-            $commentCounts = DB::table('comments')
-                ->whereIn('article_id', $articleIds)
-                ->where('status', 'approved')
-                ->select([
-                    'article_id',
-                    DB::raw('COUNT(*) as comments_total'),
-                ])
-                ->groupBy('article_id')
-                ->pluck('comments_total', 'article_id');
+            $ttl = now()->addMinutes(1);
+
+            $ratingKeysByArticle = [];
+            foreach ($articleIds as $articleId) {
+                $ratingKeysByArticle[(int) $articleId] = ReaderCache::ratingSummaryKey((int) $articleId);
+            }
+
+            $cachedRatings = Cache::many(array_values($ratingKeysByArticle));
+            $missingRatingArticleIds = [];
+
+            foreach ($ratingKeysByArticle as $articleId => $cacheKey) {
+                $cachedValue = $cachedRatings[$cacheKey] ?? null;
+
+                if ($cachedValue !== null) {
+                    $ratingStatsByArticle->put((int) $articleId, $cachedValue);
+                } else {
+                    $missingRatingArticleIds[] = (int) $articleId;
+                }
+            }
+
+            if ($missingRatingArticleIds !== []) {
+                $freshRatingRows = DB::table('article_ratings')
+                    ->whereIn('article_id', $missingRatingArticleIds)
+                    ->select([
+                        'article_id',
+                        DB::raw('COUNT(*) as ratings_total'),
+                        DB::raw('ROUND(AVG(rating), 2) as average_rating'),
+                    ])
+                    ->groupBy('article_id')
+                    ->get()
+                    ->keyBy('article_id');
+
+                foreach ($missingRatingArticleIds as $articleId) {
+                    $row = $freshRatingRows->get($articleId);
+                    if (!$row) {
+                        $row = (object) [
+                            'ratings_total' => 0,
+                            'average_rating' => 0,
+                        ];
+                    }
+
+                    $ratingStatsByArticle->put($articleId, $row);
+                    Cache::put(ReaderCache::ratingSummaryKey($articleId), $row, $ttl);
+                }
+            }
+
+            $commentKeysByArticle = [];
+            foreach ($articleIds as $articleId) {
+                $commentKeysByArticle[(int) $articleId] = ReaderCache::commentsTotalKey((int) $articleId);
+            }
+
+            $cachedCommentCounts = Cache::many(array_values($commentKeysByArticle));
+            $missingCommentArticleIds = [];
+
+            foreach ($commentKeysByArticle as $articleId => $cacheKey) {
+                $cachedValue = $cachedCommentCounts[$cacheKey] ?? null;
+
+                if ($cachedValue !== null) {
+                    $commentCounts->put((int) $articleId, (int) $cachedValue);
+                } else {
+                    $missingCommentArticleIds[] = (int) $articleId;
+                }
+            }
+
+            if ($missingCommentArticleIds !== []) {
+                $freshCommentCounts = DB::table('comments')
+                    ->whereIn('article_id', $missingCommentArticleIds)
+                    ->where('status', 'approved')
+                    ->select([
+                        'article_id',
+                        DB::raw('COUNT(*) as comments_total'),
+                    ])
+                    ->groupBy('article_id')
+                    ->pluck('comments_total', 'article_id');
+
+                foreach ($missingCommentArticleIds as $articleId) {
+                    $count = (int) ($freshCommentCounts[$articleId] ?? 0);
+                    $commentCounts->put($articleId, $count);
+                    Cache::put(ReaderCache::commentsTotalKey($articleId), $count, $ttl);
+                }
+            }
         }
 
         $articles = $items
@@ -111,7 +176,7 @@ class ReaderArticleController extends Controller
                 $articleId = (int) $article->id;
                 $ratingStats = $ratingStatsByArticle->get($articleId);
 
-                return [
+                return MediaUrl::withFeaturedImageUrl([
                     'id' => $articleId,
                     'title' => $article->title,
                     'slug' => $article->slug,
@@ -129,21 +194,11 @@ class ReaderArticleController extends Controller
                     'ratings_total' => (int) ($ratingStats->ratings_total ?? 0),
                     'average_rating' => isset($ratingStats->average_rating) ? (float) $ratingStats->average_rating : 0,
                     'comments_total' => (int) ($commentCounts[$articleId] ?? 0),
-                ];
+                ]);
             })
             ->values();
 
-        $categoryOptions = DB::table('categories')
-            ->where('is_active', true)
-            ->orderBy('name')
-            ->get(['id', 'name'])
-            ->map(function ($category) {
-                return [
-                    'id' => (int) $category->id,
-                    'name' => $category->name,
-                ];
-            })
-            ->values();
+        $categoryOptions = CachedLookups::activeCategories();
 
         return response()->json([
             'status' => 'success',
@@ -172,7 +227,7 @@ class ReaderArticleController extends Controller
         $trendingLimit = $this->normalizeInsightLimit((int) $request->query('trending_limit', 5));
         $picksLimit = $this->normalizeInsightLimit((int) $request->query('picks_limit', 4));
 
-        $insightPayload = Cache::remember('reader.insights.global.v1', now()->addMinutes(5), function () {
+        $insightPayload = Cache::remember(ReaderCache::INSIGHTS_KEY, now()->addMinutes(5), function () {
             $baseLimit = 24;
             $articles = $this->loadPublishedArticlesForInsights();
 
@@ -321,18 +376,22 @@ class ReaderArticleController extends Controller
             $currentViewsCount += 1;
         }
 
-        $ratingsSummary = DB::table('article_ratings')
-            ->where('article_id', (int) $article->id)
-            ->select([
-                DB::raw('COUNT(*) as ratings_total'),
-                DB::raw('ROUND(AVG(rating), 2) as average_rating'),
-            ])
-            ->first();
+        $ratingsSummary = Cache::remember(ReaderCache::ratingSummaryKey($articleId), now()->addMinutes(1), function () use ($articleId) {
+            return DB::table('article_ratings')
+                ->where('article_id', $articleId)
+                ->select([
+                    DB::raw('COUNT(*) as ratings_total'),
+                    DB::raw('ROUND(AVG(rating), 2) as average_rating'),
+                ])
+                ->first();
+        });
 
-        $commentsTotal = DB::table('comments')
-            ->where('article_id', (int) $article->id)
-            ->where('status', 'approved')
-            ->count();
+        $commentsTotal = Cache::remember(ReaderCache::commentsTotalKey($articleId), now()->addMinutes(1), function () use ($articleId) {
+            return (int) DB::table('comments')
+                ->where('article_id', $articleId)
+                ->where('status', 'approved')
+                ->count();
+        });
 
         $currentUserRating = null;
         if (Schema::hasColumn('article_ratings', 'user_id')) {
@@ -350,60 +409,66 @@ class ReaderArticleController extends Controller
                 ->exists();
         }
 
-        $tags = DB::table('article_tag as at')
-            ->join('tags as t', 't.id', '=', 'at.tag_id')
-            ->where('at.article_id', (int) $article->id)
-            ->orderBy('t.name')
-            ->get(['t.id', 't.name', 't.slug'])
-            ->map(function ($tag) {
-                return [
-                    'id' => (int) $tag->id,
-                    'name' => $tag->name,
-                    'slug' => $tag->slug,
-                ];
-            })
-            ->values();
+        $tags = Cache::remember(ReaderCache::tagsKey($articleId), now()->addMinutes(10), function () use ($articleId) {
+            return DB::table('article_tag as at')
+                ->join('tags as t', 't.id', '=', 'at.tag_id')
+                ->where('at.article_id', $articleId)
+                ->orderBy('t.name')
+                ->get(['t.id', 't.name', 't.slug'])
+                ->map(function ($tag) {
+                    return [
+                        'id' => (int) $tag->id,
+                        'name' => $tag->name,
+                        'slug' => $tag->slug,
+                    ];
+                })
+                ->values()
+                ->all();
+        });
 
-        $related = DB::table('articles as a')
-            ->leftJoin('users as au', 'au.id', '=', 'a.author_id')
-            ->leftJoin('categories as c', 'c.id', '=', 'a.category_id')
-            ->where('a.status', 'published')
-            ->where('a.id', '!=', (int) $article->id)
-            ->when($article->category_id, function ($query) use ($article) {
-                $query->where('a.category_id', (int) $article->category_id);
-            })
-            ->orderByDesc('a.published_at')
-            ->limit(4)
-            ->get([
-                'a.id',
-                'a.title',
-                'a.slug',
-                'a.excerpt',
-                'a.featured_image',
-                'a.published_at',
-                DB::raw("COALESCE(c.name, '-') as category_name"),
-                DB::raw("COALESCE(au.name, '-') as author_name"),
-            ])
-            ->map(function ($item) {
-                return [
-                    'id' => (int) $item->id,
-                    'title' => $item->title,
-                    'slug' => $item->slug,
-                    'excerpt' => $item->excerpt,
-                    'featured_image' => $item->featured_image,
-                    'category_name' => $item->category_name,
-                    'author_name' => $item->author_name,
-                    'published_at' => $item->published_at,
-                    'date' => $item->published_at,
-                ];
-            })
-            ->values();
+        $related = Cache::remember(ReaderCache::relatedKey($articleId), now()->addMinutes(5), function () use ($article, $articleId) {
+            return DB::table('articles as a')
+                ->leftJoin('users as au', 'au.id', '=', 'a.author_id')
+                ->leftJoin('categories as c', 'c.id', '=', 'a.category_id')
+                ->where('a.status', 'published')
+                ->where('a.id', '!=', $articleId)
+                ->when($article->category_id, function ($query) use ($article) {
+                    $query->where('a.category_id', (int) $article->category_id);
+                })
+                ->orderByDesc('a.published_at')
+                ->limit(4)
+                ->get([
+                    'a.id',
+                    'a.title',
+                    'a.slug',
+                    'a.excerpt',
+                    'a.featured_image',
+                    'a.published_at',
+                    DB::raw("COALESCE(c.name, '-') as category_name"),
+                    DB::raw("COALESCE(au.name, '-') as author_name"),
+                ])
+                ->map(function ($item) {
+                    return MediaUrl::withFeaturedImageUrl([
+                        'id' => (int) $item->id,
+                        'title' => $item->title,
+                        'slug' => $item->slug,
+                        'excerpt' => $item->excerpt,
+                        'featured_image' => $item->featured_image,
+                        'category_name' => $item->category_name,
+                        'author_name' => $item->author_name,
+                        'published_at' => $item->published_at,
+                        'date' => $item->published_at,
+                    ]);
+                })
+                ->values()
+                ->all();
+        });
 
         return response()->json([
             'status' => 'success',
             'message' => 'Detail berita berhasil dimuat.',
             'data' => [
-                'article' => [
+                'article' => MediaUrl::withFeaturedImageUrl([
                     'id' => $articleId,
                     'title' => $article->title,
                     'slug' => $article->slug,
@@ -423,7 +488,13 @@ class ReaderArticleController extends Controller
                     'comments_total' => (int) $commentsTotal,
                     'current_user_rating' => $currentUserRating ? (int) $currentUserRating : null,
                     'tags' => $tags,
-                ],
+                    'seo' => [
+                        'meta_title' => $article->meta_title ?: $article->title,
+                        'meta_description' => $article->meta_description ?: $article->excerpt,
+                        'og_image' => $article->og_image ?: $article->featured_image,
+                        'canonical_url' => $article->canonical_url ?: url('/reader/articles/' . $article->slug),
+                    ],
+                ]),
                 'related_articles' => $related,
             ],
         ]);
@@ -530,6 +601,15 @@ class ReaderArticleController extends Controller
             'parent_id' => ['nullable', 'integer', 'exists:comments,id'],
         ]);
 
+        $cleanContent = ContentSanitizer::sanitizePlainText($validated['content']);
+
+        if ($cleanContent === '') {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Konten komentar tidak valid.',
+            ], 422);
+        }
+
         if (!empty($validated['parent_id'])) {
             $isParentValid = DB::table('comments')
                 ->where('id', (int) $validated['parent_id'])
@@ -557,7 +637,7 @@ class ReaderArticleController extends Controller
             'user_id' => (int) $request->user()->id,
             'reader_id' => $legacyReaderId,
             'parent_id' => $validated['parent_id'] ?? null,
-            'content' => trim((string) $validated['content']),
+            'content' => $cleanContent,
             'status' => 'pending',
             'created_at' => now(),
             'updated_at' => now(),
@@ -702,6 +782,8 @@ class ReaderArticleController extends Controller
             $bookmarked = true;
         }
 
+        ReaderCache::forgetBookmarksCategoryOptions($userId);
+
         return response()->json([
             'status' => 'success',
             'message' => $bookmarked ? 'Berita berhasil disimpan.' : 'Simpanan berita dibatalkan.',
@@ -721,7 +803,7 @@ class ReaderArticleController extends Controller
         }
 
         $userId = (int) $request->user()->id;
-        $search = trim((string) $request->query('q', ''));
+        $search = $this->normalizeSearchTerm((string) $request->query('q', ''));
         $categoryId = max(0, (int) $request->query('category_id', 0));
 
         $perPage = (int) $request->query('per_page', 12);
@@ -749,11 +831,13 @@ class ReaderArticleController extends Controller
             ]);
 
         if ($search !== '') {
-            $query->where(function ($subQuery) use ($search) {
+            $likeTerm = '%'.ContentSanitizer::escapeLikeWildcards($search, '!').'%';
+
+            $query->where(function ($subQuery) use ($likeTerm) {
                 $subQuery
-                    ->where('a.title', 'like', "%{$search}%")
-                    ->orWhere('a.excerpt', 'like', "%{$search}%")
-                    ->orWhere('c.name', 'like', "%{$search}%");
+                    ->whereRaw("a.title LIKE ? ESCAPE '!'", [$likeTerm])
+                    ->orWhereRaw("a.excerpt LIKE ? ESCAPE '!'", [$likeTerm])
+                    ->orWhereRaw("c.name LIKE ? ESCAPE '!'", [$likeTerm]);
             });
         }
 
@@ -771,7 +855,7 @@ class ReaderArticleController extends Controller
                 return [
                     'bookmark_id' => (int) $item->bookmark_id,
                     'bookmarked_at' => $item->bookmarked_at,
-                    'article' => [
+                    'article' => MediaUrl::withFeaturedImageUrl([
                         'id' => (int) $item->id,
                         'title' => $item->title,
                         'slug' => $item->slug,
@@ -784,28 +868,33 @@ class ReaderArticleController extends Controller
                         'published_at' => $item->published_at,
                         'date' => $item->published_at,
                         'bookmarked' => true,
-                    ],
+                    ]),
                 ];
             })
             ->values();
 
-        $categoryOptions = DB::table('bookmarks as b')
-            ->join('articles as a', 'a.id', '=', 'b.article_id')
-            ->join('categories as c', 'c.id', '=', 'a.category_id')
-            ->where('b.user_id', $userId)
-            ->where('a.status', 'published')
-            ->where('c.is_active', true)
-            ->select(['c.id', 'c.name'])
-            ->distinct()
-            ->orderBy('c.name')
-            ->get()
-            ->map(function ($category) {
-                return [
-                    'id' => (int) $category->id,
-                    'name' => $category->name,
-                ];
-            })
-            ->values();
+        $categoryOptions = Cache::remember(ReaderCache::bookmarksCategoryOptionsKey($userId), now()->addMinutes(10), function () use ($userId) {
+            return DB::table('bookmarks as b')
+                ->join('articles as a', 'a.id', '=', 'b.article_id')
+                ->join('categories as c', 'c.id', '=', 'a.category_id')
+                ->where('b.user_id', $userId)
+                ->where('a.status', 'published')
+                ->where('c.is_active', true)
+                ->select(['c.id', 'c.name'])
+                ->distinct()
+                ->orderBy('c.name')
+                ->get()
+                ->map(function ($category) {
+                    return [
+                        'id' => (int) $category->id,
+                        'name' => $category->name,
+                    ];
+                })
+                ->values()
+                ->all();
+        });
+
+        $categoryOptions = is_array($categoryOptions) ? $categoryOptions : [];
 
         return response()->json([
             'status' => 'success',
@@ -896,6 +985,8 @@ class ReaderArticleController extends Controller
             ])
             ->first();
 
+        Cache::put(ReaderCache::ratingSummaryKey((int) $article->id), $ratingsSummary, now()->addMinutes(1));
+
         return response()->json([
             'status' => 'success',
             'message' => 'Rating berhasil disimpan.',
@@ -914,6 +1005,8 @@ class ReaderArticleController extends Controller
 
     private function loadPublishedArticlesForInsights()
     {
+        $since = now()->subDays(90);
+
         $ratingStatsSubQuery = DB::table('article_ratings')
             ->select([
                 'article_id',
@@ -940,6 +1033,7 @@ class ReaderArticleController extends Controller
                 $join->on('cs.article_id', '=', 'a.id');
             })
             ->where('a.status', 'published')
+            ->whereRaw('COALESCE(a.published_at, a.created_at) >= ?', [$since])
             ->select([
                 'a.id',
                 'a.title',
@@ -960,7 +1054,20 @@ class ReaderArticleController extends Controller
             ])
             ->orderByDesc('a.published_at')
             ->orderByDesc('a.created_at')
+            ->limit(500)
             ->get();
+    }
+
+    private function normalizeSearchTerm(string $value): string
+    {
+        $normalized = ContentSanitizer::sanitizePlainText($value);
+        $normalized = trim($normalized);
+
+        if (Str::length($normalized) > 120) {
+            $normalized = Str::substr($normalized, 0, 120);
+        }
+
+        return $normalized;
     }
 
     private function computeInsightHoursAgo($article, $now): float
@@ -1043,7 +1150,7 @@ class ReaderArticleController extends Controller
         $articleId = (int) $article->id;
         $dateValue = $article->published_at ?: $article->created_at;
 
-        return [
+        return MediaUrl::withFeaturedImageUrl([
             'id' => $articleId,
             'title' => $article->title,
             'slug' => $article->slug,
@@ -1063,7 +1170,7 @@ class ReaderArticleController extends Controller
             'trending_score' => $trendingScore,
             'editorial_score' => $editorialScore,
             'bookmarked' => false,
-        ];
+        ]);
     }
 
     private function pickEditorsCuratedArticles($rankedEditorial, int $limit)
@@ -1126,15 +1233,25 @@ class ReaderArticleController extends Controller
                 'a.category_id',
                 'a.views_count',
                 'a.published_at',
+                'a.meta_title',
+                'a.meta_description',
+                'a.og_image',
+                'a.canonical_url',
                 DB::raw("COALESCE(c.name, '-') as category_name"),
                 DB::raw("COALESCE(au.name, '-') as author_name"),
             ]);
 
         if (ctype_digit($identifier)) {
+            $bySlug = (clone $query)->where('a.slug', $identifier)->first();
+            if ($bySlug) {
+                return $bySlug;
+            }
+
             $query->where('a.id', (int) $identifier);
-        } else {
-            $query->where('a.slug', $identifier);
+            return $query->first();
         }
+
+        $query->where('a.slug', $identifier);
 
         return $query->first();
     }
@@ -1161,16 +1278,22 @@ class ReaderArticleController extends Controller
             return (int) $existingReaderId;
         }
 
-        return (int) DB::table('readers')->insertGetId([
-            'name' => (string) ($user->name ?: 'Pembaca'),
-            'email' => (string) $user->email,
-            'email_verified_at' => now(),
-            'password' => Hash::make(Str::random(40)),
-            'avatar' => null,
-            'status' => 'active',
-            'remember_token' => null,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        try {
+            return (int) DB::table('readers')->insertGetId([
+                'name' => (string) ($user->name ?: 'Pembaca'),
+                'email' => (string) $user->email,
+                'email_verified_at' => now(),
+                'password' => Hash::make(Str::random(40)),
+                'avatar' => null,
+                'status' => 'active',
+                'remember_token' => null,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        } catch (\Illuminate\Database\QueryException $e) {
+            // Race condition: another request inserted the same email concurrently
+            $id = DB::table('readers')->where('email', (string) $user->email)->value('id');
+            return $id ? (int) $id : null;
+        }
     }
 }

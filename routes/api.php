@@ -10,31 +10,83 @@ use App\Http\Controllers\AdminAssignmentController;
 use App\Http\Controllers\ArticleFeedbackController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AdminDashboardController;
+use App\Http\Controllers\RegistrationInviteController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ReviewerArticleController;
 use App\Http\Controllers\AuthorArticleController;
 use App\Http\Controllers\ReaderArticleController;
 
+Route::prefix('public/auth')->middleware([
+    \App\Http\Middleware\EncryptCookies::class,
+    \App\Http\Middleware\NormalizeCsrfToken::class,
+    \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
+    \Illuminate\Session\Middleware\StartSession::class,
+])->group(function () {
+    Route::post('/register', [AuthController::class, 'registerPublic'])
+        ->middleware('throttle:5,1');
+    Route::post('/register/invite', [AuthController::class, 'registerInvite'])
+        ->middleware('throttle:5,1');
+    Route::post('/login', [AuthController::class, 'loginPublic'])
+        ->middleware('throttle:10,1')
+        ->name('public.login');
+    Route::post('/forgot-password', [AuthController::class, 'forgotPasswordPublic'])
+        ->middleware('throttle:5,1');
+    Route::post('/reset-password', [AuthController::class, 'resetPasswordPublic'])
+        ->middleware('throttle:5,1');
+    Route::post('/verify-email', [AuthController::class, 'verifyEmailPublic'])
+        ->middleware('throttle:5,1');
+    Route::get('/invites/{token}', [RegistrationInviteController::class, 'showPublic'])
+        ->middleware('throttle:30,1');
+});
 
+Route::prefix('internal/auth')->middleware([
+    \App\Http\Middleware\EncryptCookies::class,
+    \App\Http\Middleware\NormalizeCsrfToken::class,
+    \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
+    \Illuminate\Session\Middleware\StartSession::class,
+])->group(function () {
+    Route::post('/login', [AuthController::class, 'loginInternal'])
+        ->middleware('throttle:10,1')
+        ->name('internal.login');
+});
+
+// Compatibility mode untuk klien lama.
 Route::prefix('auth')->group(function () {
-    Route::post('/register', [AuthController::class, 'register']);
-    Route::post('/login', [AuthController::class, 'login'])->name('login');
-    Route::post('/verify-email', [AuthController::class, 'verifyEmail']);
+    Route::post('/register', [AuthController::class, 'registerLegacy'])
+        ->middleware('throttle:5,1');
+    Route::post('/login', [AuthController::class, 'loginLegacy'])
+        ->middleware('throttle:10,1')
+        ->name('login');
+    Route::post('/forgot-password', [AuthController::class, 'forgotPasswordLegacy'])
+        ->middleware('throttle:5,1');
+    Route::post('/reset-password', [AuthController::class, 'resetPasswordLegacy'])
+        ->middleware('throttle:5,1');
+    Route::post('/verify-email', [AuthController::class, 'verifyEmailLegacy'])
+        ->middleware('throttle:5,1');
 });
 
 
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware([
+    \App\Http\Middleware\EncryptCookies::class,
+    \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
+    \App\Http\Middleware\MapScopeSessionCookie::class,
+    \Illuminate\Session\Middleware\StartSession::class,
+    \App\Http\Middleware\NormalizeCsrfToken::class,
+    'auth:web',
+    'throttle-role',
+    'active-account',
+])->group(function () {
     // Auth Routes (All Users)
     Route::prefix('auth')->group(function () {
         Route::get('/me', [AuthController::class, 'me']);
-        Route::post('/profile', [AuthController::class, 'updateProfile']);
+        Route::post('/profile', [AuthController::class, 'updateProfileDeprecated']);
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::put('/profile', [AuthController::class, 'updateProfile']);
         Route::post('/change-password', [AuthController::class, 'changePassword']);
     });
 
 
-    Route::middleware(['role:admin'])->prefix('admin')->group(function () {
+    Route::middleware(['auth-scope:internal', 'role:admin'])->prefix('admin')->group(function () {
         // User Management
         Route::post('/users', [UserController::class, 'store'])
             ->middleware('action-permission:admin.users.create');
@@ -111,10 +163,15 @@ Route::middleware('auth:sanctum')->group(function () {
             ->middleware('action-permission:admin.activities.view');
         Route::get('/activities/export', [AdminActivityController::class, 'exportCsv'])
             ->middleware('action-permission:admin.activities.export');
+
+        // Internal registration invites
+        Route::get('/invites', [RegistrationInviteController::class, 'index']);
+        Route::post('/invites', [RegistrationInviteController::class, 'store']);
+        Route::post('/invites/{id}/revoke', [RegistrationInviteController::class, 'revoke']);
     });
 
 
-    Route::middleware(['role:author,admin'])->prefix('author')->group(function () {
+    Route::middleware(['auth-scope:internal', 'role:author,admin'])->prefix('author')->group(function () {
         Route::get('/dashboard', [AuthorArticleController::class, 'dashboard'])
             ->middleware('action-permission:author.dashboard.view');
         Route::get('/activities', [AuthorArticleController::class, 'activities'])
@@ -139,13 +196,15 @@ Route::middleware('auth:sanctum')->group(function () {
             ->middleware('action-permission:author.media.view');
         Route::post('/media', [AuthorArticleController::class, 'mediaStore'])
             ->middleware('action-permission:author.media.upload');
+        Route::delete('/media/{id}', [AuthorArticleController::class, 'mediaDestroy'])
+            ->middleware('action-permission:author.media.upload');
         Route::get('/feedback', [ArticleFeedbackController::class, 'authorIndex'])
             ->middleware('action-permission:author.activities.view');
     });
 
 
 
-    Route::middleware(['role:reviewer,admin'])->prefix('reviewer')->group(function () {
+    Route::middleware(['auth-scope:internal', 'role:reviewer,admin'])->prefix('reviewer')->group(function () {
         Route::get('/dashboard', [ReviewerArticleController::class, 'dashboard'])
             ->middleware('action-permission:reviewer.dashboard.view');
         Route::get('/activities', [ReviewerArticleController::class, 'activities'])
@@ -164,7 +223,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
 
-    Route::middleware(['role:user,admin'])->prefix('user')->group(function () {
+    Route::middleware(['auth-scope:public,internal', 'role:user,admin'])->prefix('user')->group(function () {
         Route::get('/articles', [ReaderArticleController::class, 'index']);
         Route::get('/articles/insights', [ReaderArticleController::class, 'insights']);
         Route::get('/articles/{identifier}/comments', [ReaderArticleController::class, 'comments']);

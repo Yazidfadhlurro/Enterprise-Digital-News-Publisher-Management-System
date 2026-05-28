@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Support\AssignmentLoadBalancer;
 use App\Support\AuthorAssignmentLogger;
+use App\Support\ContentSanitizer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -12,6 +13,11 @@ use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
+    private function resolveAuthScopeFromRole(string $role): string
+    {
+        return in_array($role, ['admin', 'reviewer', 'author'], true) ? 'internal' : 'public';
+    }
+
     public function index(Request $request)
     {
         $query = User::query()
@@ -26,10 +32,12 @@ class UserController extends Controller
         $perPage = max(1, min($perPage, 50));
 
         if ($search !== '') {
-            $query->where(function ($subQuery) use ($search) {
+            $likeTerm = '%'.ContentSanitizer::escapeLikeWildcards($search, '!').'%';
+
+            $query->where(function ($subQuery) use ($likeTerm) {
                 $subQuery
-                    ->where('name', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%");
+                    ->whereRaw("name LIKE ? ESCAPE '!'", [$likeTerm])
+                    ->orWhereRaw("email LIKE ? ESCAPE '!'", [$likeTerm]);
             });
         }
 
@@ -89,7 +97,7 @@ class UserController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
-            'password' => 'required|string|min:6|confirmed',
+            'password' => 'required|string|min:8|confirmed',
             'role' => 'required|in:admin,reviewer,author,user',
             'assigned_reviewer_id' => [
                 'nullable',
@@ -101,6 +109,9 @@ class UserController extends Controller
                 }),
             ],
         ]);
+
+        $validated['name'] = ContentSanitizer::sanitizePlainText($validated['name']);
+        $validated['email'] = trim((string) $validated['email']);
 
         $role = (string) $validated['role'];
         $assignedReviewerId = $validated['assigned_reviewer_id'] ?? null;
@@ -123,6 +134,7 @@ class UserController extends Controller
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
             'role' => $role,
+            'auth_scope' => $this->resolveAuthScopeFromRole($role),
             'assigned_reviewer_id' => $role === 'author' ? (int) $assignedReviewerId : null,
             'status' => 'active',
             'email_verified_at' => now(),
@@ -162,7 +174,7 @@ class UserController extends Controller
             'name' => 'sometimes|string|max:255',
             'email' => ['sometimes', 'email', Rule::unique('users')->ignore($user->id)],
             'role' => 'sometimes|in:admin,reviewer,author,user',
-            'password' => 'sometimes|nullable|string|min:6|confirmed',
+            'password' => 'sometimes|nullable|string|min:8|confirmed',
             'assigned_reviewer_id' => [
                 'sometimes',
                 'nullable',
@@ -174,6 +186,14 @@ class UserController extends Controller
                 }),
             ],
         ]);
+
+        if (array_key_exists('name', $validated)) {
+            $validated['name'] = ContentSanitizer::sanitizePlainText($validated['name']);
+        }
+
+        if (array_key_exists('email', $validated)) {
+            $validated['email'] = trim((string) $validated['email']);
+        }
 
         if (array_key_exists('password', $validated) && blank($validated['password'])) {
             unset($validated['password']);
@@ -224,6 +244,8 @@ class UserController extends Controller
                 ? (int) $validated['assigned_reviewer_id']
                 : null;
         }
+
+        $validated['auth_scope'] = $this->resolveAuthScopeFromRole((string) $targetRole);
 
         $user->update($validated);
 

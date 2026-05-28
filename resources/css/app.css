@@ -1172,6 +1172,12 @@ body {
     filter: brightness(0.98);
 }
 
+.author-shell .author-image-dropzone.is-dragging {
+    border-color: #3b82f6 !important;
+    background-color: #eff6ff !important;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
 .author-shell.ui-mode-night .author-image-dropzone:hover {
     filter: brightness(1.1);
 }

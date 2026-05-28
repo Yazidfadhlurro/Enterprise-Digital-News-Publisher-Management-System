@@ -29,7 +29,6 @@ export default function WelcomePage() {
                 });
             }
         } catch (_) {
-            // Ignore and clear local auth anyway.
         } finally {
             clearAuth();
             navigate('/');

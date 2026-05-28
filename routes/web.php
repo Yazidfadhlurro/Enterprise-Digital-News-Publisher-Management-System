@@ -10,7 +10,27 @@ Route::get('/register', function () {
     return view('spa');
 });
 
+Route::get('/verify-email', function () {
+    return view('spa');
+});
+
+Route::get('/invite/{token}', function () {
+    return view('spa');
+});
+
 Route::get('/welcome', function () {
+    return view('spa');
+});
+
+Route::get('/internal/login', function () {
+    return view('spa');
+});
+
+Route::get('/forgot-password', function () {
+    return view('spa');
+});
+
+Route::get('/reset-password/{token}', function () {
     return view('spa');
 });
 
@@ -133,3 +153,5 @@ Route::get('/reader/bookmarks', function () {
 Route::get('/reader/settings', function () {
     return view('spa');
 });
+
+

@@ -12,10 +12,25 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->web(replace: [
+            \Illuminate\Cookie\Middleware\EncryptCookies::class => \App\Http\Middleware\EncryptCookies::class,
+        ]);
+
+        // Global input sanitization: strips null bytes, control characters from all requests.
+        $middleware->api(append: [
+            \App\Http\Middleware\SanitizeInput::class,
+        ]);
+
         $middleware->alias([
             'role' => \App\Http\Middleware\EnsureUserHasRole::class,
+            'auth-scope' => \App\Http\Middleware\EnsureAuthScope::class,
             'action-permission' => \App\Http\Middleware\EnsureActionPermission::class,
+            'throttle-role' => \App\Http\Middleware\ThrottleByRole::class,
+            'active-account' => \App\Http\Middleware\EnsureUserIsActive::class,
         ]);
+
+        // Security headers on all responses (X-Content-Type-Options, X-Frame-Options, CSP, etc.)
+        $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

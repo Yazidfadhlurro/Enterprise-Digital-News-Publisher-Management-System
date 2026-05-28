@@ -2,11 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\CachedLookups;
 use App\Support\EditorialActivityLogger;
-use Carbon\Carbon;
+use App\Support\ContentSanitizer;
+use App\Support\MediaUrl;
+use Illuminate\Support\Carbon;
+use DateTimeInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -81,13 +86,15 @@ class AuthorArticleController extends Controller
         }
 
         if ($search !== '') {
-            $query->where(function ($subQuery) use ($search) {
+            $likeTerm = '%'.ContentSanitizer::escapeLikeWildcards($search, '!').'%';
+
+            $query->where(function ($subQuery) use ($likeTerm) {
                 $subQuery
-                    ->where('a.title', 'like', "%{$search}%")
-                    ->orWhere('actor.name', 'like', "%{$search}%")
-                    ->orWhere('ea.to_stage', 'like', "%{$search}%")
-                    ->orWhere('ea.from_stage', 'like', "%{$search}%")
-                    ->orWhere('ea.note', 'like', "%{$search}%");
+                    ->whereRaw("a.title LIKE ? ESCAPE '!'", [$likeTerm])
+                    ->orWhereRaw("actor.name LIKE ? ESCAPE '!'", [$likeTerm])
+                    ->orWhereRaw("ea.to_stage LIKE ? ESCAPE '!'", [$likeTerm])
+                    ->orWhereRaw("ea.from_stage LIKE ? ESCAPE '!'", [$likeTerm])
+                    ->orWhereRaw("ea.note LIKE ? ESCAPE '!'", [$likeTerm]);
             });
         }
 
@@ -163,10 +170,7 @@ class AuthorArticleController extends Controller
 
     public function categories(): JsonResponse
     {
-        $categories = DB::table('categories')
-            ->where('is_active', true)
-            ->orderBy('name')
-            ->get(['id', 'name']);
+        $categories = CachedLookups::activeCategories();
 
         return response()->json([
             'status' => 'success',
@@ -184,7 +188,10 @@ class AuthorArticleController extends Controller
             'description' => ['nullable', 'string', 'max:255'],
         ]);
 
-        $name = trim((string) $validated['name']);
+        $name = ContentSanitizer::sanitizePlainText($validated['name']);
+        $description = filled($validated['description'] ?? null)
+            ? ContentSanitizer::sanitizePlainText($validated['description'])
+            : null;
 
         if ($name === '') {
             throw ValidationException::withMessages([
@@ -206,11 +213,13 @@ class AuthorArticleController extends Controller
         $categoryId = DB::table('categories')->insertGetId([
             'name' => $name,
             'slug' => $this->makeUniqueCategorySlug($name),
-            'description' => $validated['description'] ?? null,
+            'description' => $description,
             'is_active' => true,
             'created_at' => $now,
             'updated_at' => $now,
         ]);
+
+        CachedLookups::forgetActiveCategories();
 
         $category = DB::table('categories')
             ->where('id', $categoryId)
@@ -258,10 +267,12 @@ class AuthorArticleController extends Controller
         }
 
         if ($search !== '') {
-            $query->where(function ($subQuery) use ($search) {
+            $likeTerm = '%'.ContentSanitizer::escapeLikeWildcards($search, '!').'%';
+
+            $query->where(function ($subQuery) use ($likeTerm) {
                 $subQuery
-                    ->where('a.title', 'like', "%{$search}%")
-                    ->orWhere('c.name', 'like', "%{$search}%");
+                    ->whereRaw("a.title LIKE ? ESCAPE '!'", [$likeTerm])
+                    ->orWhereRaw("c.name LIKE ? ESCAPE '!'", [$likeTerm]);
             });
         }
 
@@ -317,19 +328,26 @@ class AuthorArticleController extends Controller
             ], 404);
         }
 
+        $detailed = MediaUrl::withFeaturedImageUrl([
+            ...$this->mapArticleSummary($article),
+            'slug' => $article->slug,
+            'excerpt' => $article->excerpt,
+            'content' => $article->content,
+            'featured_image' => $article->featured_image,
+            'featured_image_alt' => $article->featured_image_alt,
+            'category_id' => $article->category_id ? (int) $article->category_id : null,
+            'tags' => $this->articleTagNames((int) $article->id),
+        ]);
+
         return response()->json([
             'status' => 'success',
             'message' => 'Detail artikel penulis berhasil dimuat.',
+            'id' => $detailed['id'] ?? null,
+            'title' => $detailed['title'] ?? null,
+            'slug' => $detailed['slug'] ?? null,
+            'content' => $detailed['content'] ?? null,
             'data' => [
-                'article' => [
-                    ...$this->mapArticleSummary($article),
-                    'slug' => $article->slug,
-                    'excerpt' => $article->excerpt,
-                    'content' => $article->content,
-                    'featured_image' => $article->featured_image,
-                    'featured_image_alt' => $article->featured_image_alt,
-                    'category_id' => $article->category_id ? (int) $article->category_id : null,
-                ],
+                'article' => $detailed,
             ],
         ]);
     }
@@ -355,7 +373,7 @@ class AuthorArticleController extends Controller
                 'created_at',
             ])
             ->map(function ($item) {
-                return [
+                return MediaUrl::withFileUrl([
                     'id' => (int) $item->id,
                     'file_name' => $item->file_name,
                     'file_path' => $item->file_path,
@@ -365,7 +383,7 @@ class AuthorArticleController extends Controller
                     'height' => $item->height ? (int) $item->height : null,
                     'alt_text' => $item->alt_text,
                     'created_at' => $item->created_at,
-                ];
+                ]);
             })
             ->values();
 
@@ -381,23 +399,38 @@ class AuthorArticleController extends Controller
     public function mediaStore(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'file' => ['required', 'file', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
-            'alt_text' => ['required', 'string', 'max:255'],
+            'file' => ['required', 'file', 'mimes:jpg,jpeg,png,webp,mp4,webm,mov', 'max:20480'],
+            'alt_text' => ['nullable', 'string', 'max:255'],
         ]);
 
         /** @var UploadedFile $file */
         $file = $validated['file'];
         $authorId = (int) $request->user()->id;
-        $altText = trim((string) $validated['alt_text']);
+        $altText = ContentSanitizer::sanitizePlainText((string) ($validated['alt_text'] ?? ''));
+        $mimeType = (string) ($file->getClientMimeType() ?: $file->getMimeType() ?: '');
+        $isImageUpload = str_starts_with($mimeType, 'image/');
+
+        if ($isImageUpload && $altText === '') {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Teks alternatif gambar wajib diisi.',
+            ], 422);
+        }
 
         $fileBinary = @file_get_contents($file->getRealPath());
-        $checksum = hash('sha256', (string) $fileBinary);
+        if ($fileBinary === false) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'File tidak dapat dibaca. Coba unggah ulang.',
+            ], 422);
+        }
+        $checksum = hash('sha256', $fileBinary);
 
         $existing = DB::table('media_assets')
             ->where('checksum', $checksum)
-            ->where('is_active', true)
             ->first([
                 'id',
+                'is_active',
                 'file_name',
                 'file_path',
                 'mime_type',
@@ -408,11 +441,21 @@ class AuthorArticleController extends Controller
             ]);
 
         if ($existing) {
+            if (!(bool) ($existing->is_active ?? false)) {
+                DB::table('media_assets')
+                    ->where('id', (int) $existing->id)
+                    ->update([
+                        'is_active' => true,
+                        'alt_text' => (string) ($existing->alt_text ?: $altText),
+                        'updated_at' => now(),
+                    ]);
+            }
+
             return response()->json([
                 'status' => 'success',
                 'message' => 'Media sudah ada dan digunakan kembali.',
                 'data' => [
-                    'media' => [
+                    'media' => MediaUrl::withFileUrl([
                         'id' => (int) $existing->id,
                         'file_name' => $existing->file_name,
                         'file_path' => $existing->file_path,
@@ -421,34 +464,89 @@ class AuthorArticleController extends Controller
                         'width' => $existing->width ? (int) $existing->width : null,
                         'height' => $existing->height ? (int) $existing->height : null,
                         'alt_text' => $existing->alt_text ?: $altText,
-                    ],
+                    ]),
                 ],
             ]);
         }
 
         $stored = $this->compressAndStoreMedia($file, $authorId, $checksum);
 
-        $mediaId = DB::table('media_assets')->insertGetId([
-            'uploader_id' => $authorId,
-            'file_name' => $stored['file_name'],
-            'file_path' => $stored['file_path'],
-            'mime_type' => $stored['mime_type'],
-            'size_bytes' => $stored['size_bytes'],
-            'width' => $stored['width'],
-            'height' => $stored['height'],
-            'alt_text' => $altText,
-            'checksum' => $stored['checksum'],
-            'is_active' => true,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        $mediaId = null;
+
+        try {
+            $mediaId = DB::table('media_assets')->insertGetId([
+                'uploader_id' => $authorId,
+                'file_name' => $stored['file_name'],
+                'file_path' => $stored['file_path'],
+                'mime_type' => $stored['mime_type'],
+                'size_bytes' => $stored['size_bytes'],
+                'width' => $stored['width'],
+                'height' => $stored['height'],
+                'alt_text' => $altText,
+                'checksum' => $stored['checksum'],
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        } catch (QueryException $exception) {
+            // Handle race-condition: another request inserted same checksum.
+            $duplicate = DB::table('media_assets')
+                ->where('checksum', $checksum)
+                ->first([
+                    'id',
+                    'is_active',
+                    'file_name',
+                    'file_path',
+                    'mime_type',
+                    'size_bytes',
+                    'width',
+                    'height',
+                    'alt_text',
+                ]);
+
+            if (!$duplicate) {
+                throw $exception;
+            }
+
+            if (!(bool) ($duplicate->is_active ?? false)) {
+                DB::table('media_assets')
+                    ->where('id', (int) $duplicate->id)
+                    ->update([
+                        'is_active' => true,
+                        'alt_text' => (string) ($duplicate->alt_text ?: $altText),
+                        'updated_at' => now(),
+                    ]);
+            }
+
+            // Cleanup file we just stored (best effort).
+            if (!empty($stored['file_path'] ?? null)) {
+                Storage::disk('public')->delete((string) $stored['file_path']);
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Media sudah ada dan digunakan kembali.',
+                'data' => [
+                    'media' => MediaUrl::withFileUrl([
+                        'id' => (int) $duplicate->id,
+                        'file_name' => $duplicate->file_name,
+                        'file_path' => $duplicate->file_path,
+                        'mime_type' => $duplicate->mime_type,
+                        'size_bytes' => (int) $duplicate->size_bytes,
+                        'width' => $duplicate->width ? (int) $duplicate->width : null,
+                        'height' => $duplicate->height ? (int) $duplicate->height : null,
+                        'alt_text' => $duplicate->alt_text ?: $altText,
+                    ]),
+                ],
+            ]);
+        }
 
         return response()->json([
             'status' => 'success',
             'message' => 'Media berhasil diunggah.',
             'data' => [
-                'media' => [
-                    'id' => $mediaId,
+                'media' => MediaUrl::withFileUrl([
+                    'id' => (int) $mediaId,
                     'file_name' => $stored['file_name'],
                     'file_path' => $stored['file_path'],
                     'mime_type' => $stored['mime_type'],
@@ -456,9 +554,58 @@ class AuthorArticleController extends Controller
                     'width' => $stored['width'],
                     'height' => $stored['height'],
                     'alt_text' => $altText,
-                ],
+                ]),
             ],
         ], 201);
+    }
+
+    public function mediaDestroy(Request $request, int $id): JsonResponse
+    {
+        $authorId = (int) $request->user()->id;
+
+        $media = DB::table('media_assets')
+            ->where('id', $id)
+            ->where('uploader_id', $authorId)
+            ->where('is_active', true)
+            ->first(['id', 'file_path']);
+
+        if (!$media) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Media tidak ditemukan.',
+            ], 404);
+        }
+
+        $filePath = is_string($media->file_path ?? null) ? trim((string) $media->file_path) : '';
+
+        DB::table('media_assets')
+            ->where('id', $id)
+            ->update([
+                'is_active' => false,
+                'updated_at' => now(),
+            ]);
+
+        // Best-effort delete physical file only if unused elsewhere.
+        if ($filePath !== '' && !preg_match('#^https?://#i', $filePath) && !str_starts_with($filePath, '/')) {
+            $stillUsedByMedia = DB::table('media_assets')
+                ->where('is_active', true)
+                ->where('file_path', $filePath)
+                ->where('id', '!=', $id)
+                ->exists();
+
+            $stillUsedByArticle = DB::table('articles')
+                ->where('featured_image', $filePath)
+                ->exists();
+
+            if (!$stillUsedByMedia && !$stillUsedByArticle) {
+                Storage::disk('public')->delete($filePath);
+            }
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Media berhasil dihapus.',
+        ]);
     }
 
     public function versions(Request $request, int $id): JsonResponse
@@ -564,7 +711,7 @@ class AuthorArticleController extends Controller
         $updates = [];
 
         if (array_key_exists('title', $validated)) {
-            $updates['title'] = trim((string) $validated['title']);
+            $updates['title'] = ContentSanitizer::sanitizePlainText($validated['title']);
         }
 
         if (array_key_exists('slug', $validated)) {
@@ -573,11 +720,13 @@ class AuthorArticleController extends Controller
         }
 
         if (array_key_exists('excerpt', $validated)) {
-            $updates['excerpt'] = $validated['excerpt'];
+            $updates['excerpt'] = filled($validated['excerpt'] ?? null)
+                ? ContentSanitizer::sanitizePlainText($validated['excerpt'])
+                : null;
         }
 
         if (array_key_exists('content', $validated)) {
-            $updates['content'] = $validated['content'];
+            $updates['content'] = ContentSanitizer::sanitizeRichText($validated['content']);
         }
 
         if (array_key_exists('category_id', $validated)) {
@@ -585,11 +734,23 @@ class AuthorArticleController extends Controller
         }
 
         if (array_key_exists('featured_image', $validated)) {
-            $updates['featured_image'] = $validated['featured_image'];
+            $featuredImageInput = $validated['featured_image'];
+            $featuredImage = ContentSanitizer::sanitizeMediaPath($featuredImageInput);
+
+            if ($featuredImageInput !== null && trim((string) $featuredImageInput) !== '' && $featuredImage === null) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Gambar unggulan tidak valid.',
+                ], 422);
+            }
+
+            $updates['featured_image'] = $featuredImage;
         }
 
         if (array_key_exists('featured_image_alt', $validated)) {
-            $updates['featured_image_alt'] = $validated['featured_image_alt'];
+            $updates['featured_image_alt'] = filled($validated['featured_image_alt'] ?? null)
+                ? ContentSanitizer::sanitizePlainText($validated['featured_image_alt'])
+                : null;
         }
 
         $updates['updated_at'] = now();
@@ -621,44 +782,71 @@ class AuthorArticleController extends Controller
             'status' => ['nullable', Rule::in(self::AUTHOR_ALLOWED_STATUSES)],
             'featured_image' => ['nullable', 'string', 'max:255'],
             'featured_image_alt' => ['nullable', 'string', 'max:255'],
+            'tags' => ['sometimes', 'array', 'max:5'],
+            'tags.*' => ['string', 'max:50'],
+            'meta_title' => ['nullable', 'string', 'max:70'],
+            'meta_description' => ['nullable', 'string', 'max:160'],
+            'og_image' => ['nullable', 'string', 'max:255'],
+            'canonical_url' => ['nullable', 'url', 'max:255'],
         ]);
 
-        $title = trim((string) $validated['title']);
+        $title = ContentSanitizer::sanitizePlainText($validated['title']);
         $status = $validated['status'] ?? 'draft';
         $slugSource = trim((string) ($validated['slug'] ?? $title));
         $slug = $this->makeUniqueSlug($slugSource);
         $now = now();
 
-        if ($status === 'pending' && blank($request->user()->assigned_reviewer_id)) {
+        $excerpt = filled($validated['excerpt'] ?? null)
+            ? ContentSanitizer::sanitizePlainText($validated['excerpt'])
+            : null;
+        $content = ContentSanitizer::sanitizeRichText($validated['content']);
+        $featuredImageInput = $validated['featured_image'] ?? null;
+        $featuredImage = ContentSanitizer::sanitizeMediaPath($featuredImageInput);
+        $featuredImageAlt = filled($validated['featured_image_alt'] ?? null)
+            ? ContentSanitizer::sanitizePlainText($validated['featured_image_alt'])
+            : null;
+
+        if ($featuredImageInput !== null && trim((string) $featuredImageInput) !== '' && $featuredImage === null) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Gambar unggulan tidak valid.',
+            ], 422);
+        }
+
+        if ($status === 'pending' && blank($request->user()->fresh()?->assigned_reviewer_id)) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Anda belum memiliki editor penanggung jawab. Hubungi admin untuk assignment editor.',
             ], 422);
         }
 
-        $priorityScore = $this->calculatePriorityScore($title, $validated['excerpt'] ?? null, $validated['content']);
+        $priorityScore = $this->calculatePriorityScore($title, $excerpt, $content);
         $reviewDueAt = $status === 'pending' ? $this->calculateReviewDueAt($priorityScore, $now) : null;
         $actor = $request->user();
         $actorId = $actor ? (int) $actor->id : null;
         $actorRole = $actor && isset($actor->role) ? (string) $actor->role : null;
 
-        $articleId = DB::transaction(function () use ($request, $validated, $title, $slug, $status, $now, $priorityScore, $reviewDueAt, $actorId, $actorRole) {
+        $articleId = DB::transaction(function () use ($request, $validated, $title, $slug, $status, $now, $priorityScore, $reviewDueAt, $actorId, $actorRole, $excerpt, $content, $featuredImage, $featuredImageAlt) {
             $createdArticleId = DB::table('articles')->insertGetId([
                 'author_id' => (int) $request->user()->id,
                 'category_id' => $validated['category_id'] ?? null,
                 'title' => $title,
                 'slug' => $slug,
-                'excerpt' => $validated['excerpt'] ?? null,
-                'content' => $validated['content'],
-                'featured_image' => $validated['featured_image'] ?? null,
-                'featured_image_alt' => $validated['featured_image_alt'] ?? null,
+                'excerpt' => $excerpt,
+                'content' => $content,
+                'featured_image' => $featuredImage,
+                'featured_image_alt' => $featuredImageAlt,
                 'status' => $status,
-            'priority_score' => $priorityScore,
-            'review_due_at' => $reviewDueAt,
+                'priority_score' => $priorityScore,
+                'review_due_at' => $reviewDueAt,
                 'reviewer_id' => null,
                 'review_notes' => null,
                 'published_at' => null,
                 'is_featured' => false,
+                'meta_title' => filled($validated['meta_title'] ?? null) ? ContentSanitizer::sanitizePlainText($validated['meta_title']) : null,
+                'meta_description' => filled($validated['meta_description'] ?? null) ? ContentSanitizer::sanitizePlainText($validated['meta_description']) : null,
+                'og_image' => ContentSanitizer::sanitizeMediaPath($validated['og_image'] ?? null),
+                'canonical_url' => filled($validated['canonical_url'] ?? null) ? trim((string) $validated['canonical_url']) : null,
                 'views_count' => 0,
                 'created_at' => $now,
                 'updated_at' => $now,
@@ -677,16 +865,26 @@ class AuthorArticleController extends Controller
             return $createdArticleId;
         });
 
+        if (array_key_exists('tags', $validated)) {
+            $this->syncArticleTags($articleId, $validated['tags'] ?? []);
+        }
+
         $createdArticle = DB::table('articles')->where('id', $articleId)->first();
         if ($createdArticle) {
             $this->createArticleVersion((object) $createdArticle, (int) $request->user()->id, 'create');
         }
 
+        $created = $this->fetchArticleByAuthor((int) $request->user()->id, $articleId);
+
         return response()->json([
             'status' => 'success',
             'message' => 'Artikel berhasil dibuat.',
+            'id' => $created['id'] ?? null,
+            'title' => $created['title'] ?? null,
+            'slug' => $created['slug'] ?? null,
+            'content' => $created['content'] ?? null,
             'data' => [
-                'article' => $this->fetchArticleByAuthor((int) $request->user()->id, $articleId),
+                'article' => $created,
             ],
         ], 201);
     }
@@ -706,7 +904,7 @@ class AuthorArticleController extends Controller
             ], 404);
         }
 
-        if (!in_array($existingArticle->status, [...self::AUTHOR_EDITABLE_STATUSES, 'pending'], true)) {
+        if (!in_array($existingArticle->status, self::AUTHOR_EDITABLE_STATUSES, true)) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Status artikel saat ini tidak dapat diedit oleh penulis.',
@@ -729,6 +927,12 @@ class AuthorArticleController extends Controller
             'status' => ['sometimes', Rule::in(self::AUTHOR_ALLOWED_STATUSES)],
             'featured_image' => ['sometimes', 'nullable', 'string', 'max:255'],
             'featured_image_alt' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'tags' => ['sometimes', 'array', 'max:5'],
+            'tags.*' => ['string', 'max:50'],
+            'meta_title' => ['sometimes', 'nullable', 'string', 'max:70'],
+            'meta_description' => ['sometimes', 'nullable', 'string', 'max:160'],
+            'og_image' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'canonical_url' => ['sometimes', 'nullable', 'url', 'max:255'],
         ]);
 
         if (empty($validated)) {
@@ -740,7 +944,7 @@ class AuthorArticleController extends Controller
         $updates = [];
 
         $nextTitle = array_key_exists('title', $validated)
-            ? trim((string) $validated['title'])
+            ? ContentSanitizer::sanitizePlainText($validated['title'])
             : (string) $existingArticle->title;
 
         if (array_key_exists('title', $validated)) {
@@ -755,11 +959,13 @@ class AuthorArticleController extends Controller
         }
 
         if (array_key_exists('excerpt', $validated)) {
-            $updates['excerpt'] = $validated['excerpt'];
+            $updates['excerpt'] = filled($validated['excerpt'] ?? null)
+                ? ContentSanitizer::sanitizePlainText($validated['excerpt'])
+                : null;
         }
 
         if (array_key_exists('content', $validated)) {
-            $updates['content'] = $validated['content'];
+            $updates['content'] = ContentSanitizer::sanitizeRichText($validated['content']);
         }
 
         if (array_key_exists('category_id', $validated)) {
@@ -767,11 +973,39 @@ class AuthorArticleController extends Controller
         }
 
         if (array_key_exists('featured_image', $validated)) {
-            $updates['featured_image'] = $validated['featured_image'];
+            $featuredImageInput = $validated['featured_image'];
+            $featuredImage = ContentSanitizer::sanitizeMediaPath($featuredImageInput);
+
+            if ($featuredImageInput !== null && trim((string) $featuredImageInput) !== '' && $featuredImage === null) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Gambar unggulan tidak valid.',
+                ], 422);
+            }
+
+            $updates['featured_image'] = $featuredImage;
         }
 
         if (array_key_exists('featured_image_alt', $validated)) {
-            $updates['featured_image_alt'] = $validated['featured_image_alt'];
+            $updates['featured_image_alt'] = filled($validated['featured_image_alt'] ?? null)
+                ? ContentSanitizer::sanitizePlainText($validated['featured_image_alt'])
+                : null;
+        }
+
+        if (array_key_exists('meta_title', $validated)) {
+            $updates['meta_title'] = filled($validated['meta_title'] ?? null) ? ContentSanitizer::sanitizePlainText($validated['meta_title']) : null;
+        }
+
+        if (array_key_exists('meta_description', $validated)) {
+            $updates['meta_description'] = filled($validated['meta_description'] ?? null) ? ContentSanitizer::sanitizePlainText($validated['meta_description']) : null;
+        }
+
+        if (array_key_exists('og_image', $validated)) {
+            $updates['og_image'] = ContentSanitizer::sanitizeMediaPath($validated['og_image']);
+        }
+
+        if (array_key_exists('canonical_url', $validated)) {
+            $updates['canonical_url'] = filled($validated['canonical_url'] ?? null) ? trim((string) $validated['canonical_url']) : null;
         }
 
         if (array_key_exists('status', $validated)) {
@@ -782,7 +1016,7 @@ class AuthorArticleController extends Controller
                 ], 422);
             }
 
-            if ($validated['status'] === 'pending' && blank($request->user()->assigned_reviewer_id)) {
+            if ($validated['status'] === 'pending' && blank($request->user()->fresh()?->assigned_reviewer_id)) {
                 return response()->json([
                     'status' => 'error',
                     'message' => 'Anda belum memiliki editor penanggung jawab. Hubungi admin untuk assignment editor.',
@@ -833,6 +1067,10 @@ class AuthorArticleController extends Controller
             }
         });
 
+        if (array_key_exists('tags', $validated)) {
+            $this->syncArticleTags($id, $validated['tags'] ?? []);
+        }
+
         $updatedArticle = DB::table('articles')->where('id', $id)->first();
         if ($updatedArticle) {
             $source = $hasStatusTransitionInput && ($validated['status'] ?? null) === 'pending' ? 'submit' : 'manual';
@@ -863,10 +1101,10 @@ class AuthorArticleController extends Controller
             ], 404);
         }
 
-        if ($article->status === 'published') {
+        if (!in_array($article->status, self::AUTHOR_EDITABLE_STATUSES, true)) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Artikel published tidak dapat dihapus.',
+                'message' => 'Artikel hanya dapat dihapus saat berstatus draft atau revisi.',
             ], 422);
         }
 
@@ -903,7 +1141,7 @@ class AuthorArticleController extends Controller
             return null;
         }
 
-        return [
+        return MediaUrl::withFeaturedImageUrl([
             ...$this->mapArticleSummary($article),
             'slug' => $article->slug,
             'excerpt' => $article->excerpt,
@@ -911,7 +1149,8 @@ class AuthorArticleController extends Controller
             'featured_image' => $article->featured_image,
             'featured_image_alt' => $article->featured_image_alt,
             'category_id' => $article->category_id ? (int) $article->category_id : null,
-        ];
+            'tags' => $this->articleTagNames($articleId),
+        ]);
     }
 
     private function mapArticleSummary(object $article): array
@@ -1014,17 +1253,19 @@ class AuthorArticleController extends Controller
         return max(1, min(100, $score));
     }
 
-    private function calculateReviewDueAt(int $priorityScore, Carbon $submittedAt): Carbon
+    private function calculateReviewDueAt(int $priorityScore, DateTimeInterface $submittedAt): Carbon
     {
+        $base = Carbon::instance($submittedAt);
+
         if ($priorityScore >= 80) {
-            return $submittedAt->copy()->addHours(8);
+            return $base->copy()->addHours(8);
         }
 
         if ($priorityScore >= 60) {
-            return $submittedAt->copy()->addHours(24);
+            return $base->copy()->addHours(24);
         }
 
-        return $submittedAt->copy()->addHours(48);
+        return $base->copy()->addHours(48);
     }
 
     private function createArticleVersion(object $article, int $authorId, string $source): void
@@ -1107,5 +1348,65 @@ class AuthorArticleController extends Controller
             'height' => $height,
             'checksum' => $checksum,
         ];
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function articleTagNames(int $articleId): array
+    {
+        return DB::table('article_tag as at')
+            ->join('tags as t', 't.id', '=', 'at.tag_id')
+            ->where('at.article_id', $articleId)
+            ->orderBy('t.name')
+            ->pluck('t.name')
+            ->map(fn ($name) => (string) $name)
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param  array<int, mixed>  $tagNames
+     */
+    private function syncArticleTags(int $articleId, array $tagNames): void
+    {
+        $normalized = collect($tagNames)
+            ->map(fn ($name) => ContentSanitizer::sanitizePlainText((string) $name))
+            ->filter()
+            ->unique()
+            ->take(5)
+            ->values();
+
+        DB::table('article_tag')->where('article_id', $articleId)->delete();
+
+        foreach ($normalized as $name) {
+            $tagId = DB::table('tags')
+                ->whereRaw('LOWER(name) = ?', [Str::lower($name)])
+                ->value('id');
+
+            if (!$tagId) {
+                $baseSlug = Str::slug($name);
+                $baseSlug = $baseSlug !== '' ? $baseSlug : 'tag';
+                $slug = $baseSlug;
+                $counter = 2;
+
+                while (DB::table('tags')->where('slug', $slug)->exists()) {
+                    $slug = $baseSlug.'-'.$counter;
+                    $counter += 1;
+                }
+
+                $tagId = DB::table('tags')->insertGetId([
+                    'name' => $name,
+                    'slug' => $slug,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+
+            DB::table('article_tag')->insert([
+                'article_id' => $articleId,
+                'tag_id' => (int) $tagId,
+            ]);
+        }
     }
 }

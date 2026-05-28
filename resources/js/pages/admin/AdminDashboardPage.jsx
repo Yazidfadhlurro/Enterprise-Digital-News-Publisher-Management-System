@@ -209,7 +209,7 @@ export default function AdminDashboardPage() {
                 <article className="admin-page-panel rounded-lg border border-slate-200 bg-white px-4 py-4 shadow-sm">
                     <div className="flex items-center justify-between min-h-9">
                         <MetricIcon kind="articles" />
-                        <span className="admin-dashboard-trend-pill text-[10px] font-semibold text-emerald-600 bg-emerald-50 border border-emerald-100 rounded px-1.5 py-0.5">+12%</span>
+                        <span className="admin-dashboard-trend-pill text-[10px] font-semibold text-slate-500 bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5">{t('admin.dashboard.metricLive', 'Data terkini')}</span>
                     </div>
                     <p className="mt-4 text-[34px] leading-none font-semibold text-slate-900">{totalArticles}</p>
                     <p className="mt-2 text-xs text-slate-500">{t('admin.dashboard.totalArticles', 'Total Berita')}</p>
@@ -218,16 +218,16 @@ export default function AdminDashboardPage() {
                 <article className="admin-page-panel rounded-lg border border-slate-200 bg-white px-4 py-4 shadow-sm">
                     <div className="flex items-center justify-between min-h-9">
                         <MetricIcon kind="published" />
-                        <span className="admin-dashboard-trend-pill text-[10px] font-semibold text-emerald-600 bg-emerald-50 border border-emerald-100 rounded px-1.5 py-0.5">+8%</span>
+                        <span className="admin-dashboard-trend-pill text-[10px] font-semibold text-slate-500 bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5">{t('admin.dashboard.metricLive', 'Data terkini')}</span>
                     </div>
                     <p className="mt-4 text-[34px] leading-none font-semibold text-slate-900">{totalPublished}</p>
-                    <p className="mt-2 text-xs text-slate-500">{t('admin.dashboard.totalPublished', 'Total Published')}</p>
+                    <p className="mt-2 text-xs text-slate-500">{t('admin.dashboard.totalPublished', 'Total Berita Terbit')}</p>
                 </article>
 
                 <article className="admin-page-panel rounded-lg border border-slate-200 bg-white px-4 py-4 shadow-sm">
                     <div className="flex items-center justify-between min-h-9">
                         <MetricIcon kind="review" />
-                        <span className="admin-dashboard-trend-pill text-[10px] font-semibold text-emerald-600 bg-emerald-50 border border-emerald-100 rounded px-1.5 py-0.5">+3</span>
+                        <span className="admin-dashboard-trend-pill text-[10px] font-semibold text-slate-500 bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5">{t('admin.dashboard.metricLive', 'Data terkini')}</span>
                     </div>
                     <p className="mt-4 text-[34px] leading-none font-semibold text-slate-900">{pendingReview}</p>
                     <p className="mt-2 text-xs text-slate-500">{t('admin.dashboard.pendingReview', 'Menunggu Review')}</p>
@@ -236,10 +236,10 @@ export default function AdminDashboardPage() {
                 <article className="admin-page-panel rounded-lg border border-slate-200 bg-white px-4 py-4 shadow-sm">
                     <div className="flex items-center justify-between min-h-9">
                         <MetricIcon kind="users" />
-                        <span className="admin-dashboard-trend-pill text-[10px] font-semibold text-emerald-600 bg-emerald-50 border border-emerald-100 rounded px-1.5 py-0.5">+5</span>
+                        <span className="admin-dashboard-trend-pill text-[10px] font-semibold text-slate-500 bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5">{t('admin.dashboard.metricLive', 'Data terkini')}</span>
                     </div>
                     <p className="mt-4 text-[34px] leading-none font-semibold text-slate-900">{totalUsers}</p>
-                    <p className="mt-2 text-xs text-slate-500">{t('admin.dashboard.totalUsers', 'Total User')}</p>
+                    <p className="mt-2 text-xs text-slate-500">{t('admin.dashboard.totalUsers', 'Total Pengguna')}</p>
                 </article>
             </section>
 

@@ -60,8 +60,8 @@ export default function LoginPage() {
 
         return 'normal';
     });
-    const [email, setEmail] = useState('admin@portal.com');
-    const [password, setPassword] = useState('password');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const uiModeMeta = useMemo(() => buildUiModeMeta(t), [t]);
@@ -81,6 +81,11 @@ export default function LoginPage() {
         const user = getUser();
 
         if (!token) {
+            return;
+        }
+
+        if (user?.auth_scope === 'internal') {
+            navigate('/internal/login', { replace: true });
             return;
         }
 
@@ -121,7 +126,7 @@ export default function LoginPage() {
         setLoading(true);
 
         try {
-            const payload = await apiRequest('/auth/login', {
+            const payload = await apiRequest('/public/auth/login', {
                 method: 'POST',
                 body: { email, password },
             });
@@ -130,9 +135,13 @@ export default function LoginPage() {
                 throw new Error(payload?.message || 'Login gagal.');
             }
 
-            const token = payload?.data?.token;
             const user = payload?.data?.user;
-            saveAuth(token, user);
+
+            if (user?.auth_scope !== 'public') {
+                throw new Error(t('login.errorInternalAccount', 'Akun Anda adalah akun internal. Gunakan login internal untuk masuk.'));
+            }
+
+            saveAuth(user);
 
             try {
                 localStorage.setItem(uiModeStorageKey, uiMode);
@@ -234,6 +243,19 @@ export default function LoginPage() {
                             <Link to="/register" className="text-blue-600 font-medium hover:underline">{t('login.registerNow', 'Daftar sekarang')}</Link>
                         </p>
                     </div>
+
+                    <div className="flex items-center justify-center mt-2">
+                        <Link to="/forgot-password?scope=public" className="text-xs font-medium text-slate-500 hover:text-blue-600 hover:underline">
+                            {t('login.forgotPassword', 'Lupa kata sandi?')}
+                        </Link>
+                    </div>
+
+                    <div className="flex items-center justify-center mt-2">
+                        <Link to="/verify-email" className="text-xs font-medium text-slate-500 hover:text-blue-600 hover:underline">
+                            {t('login.verifyEmail', 'Sudah daftar? Verifikasi email di sini')}
+                        </Link>
+                    </div>
+
                 </form>
             </div>
         </div>

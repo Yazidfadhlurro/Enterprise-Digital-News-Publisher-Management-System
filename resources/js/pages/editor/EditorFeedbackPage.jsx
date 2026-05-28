@@ -9,7 +9,7 @@ export default function EditorFeedbackPage() {
     return (
         <ArticleFeedbackPage
             Shell={EditorShell}
-            title={t('feedback.reviewer.title', 'Komentar & Rating Berita Assignment')}
+            title={t('feedback.reviewer.title', 'Komentar & Rating Berita Tugas')}
             endpoint="/reviewer/feedback"
             showInsights
             buildViewPath={(row) => (row?.article_id ? `/editor/review/${row.article_id}` : null)}

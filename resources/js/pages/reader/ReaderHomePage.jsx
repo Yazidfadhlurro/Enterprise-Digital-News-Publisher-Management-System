@@ -4,21 +4,8 @@ import ReaderShell from '../../components/ReaderShell';
 import { apiRequest } from '../../lib/api';
 import { getToken } from '../../lib/auth';
 import { useI18n } from '../../lib/i18n';
+import { articleImageUrl } from '../../lib/media';
 import { useErrorNotification } from '../../lib/notify';
-
-function resolveImageUrl(value) {
-    if (!value) return '';
-
-    if (/^https?:\/\//i.test(value) || value.startsWith('data:') || value.startsWith('/')) {
-        return value;
-    }
-
-    if (value.startsWith('storage/')) {
-        return `/${value}`;
-    }
-
-    return `/storage/${value.replace(/^\/+/, '')}`;
-}
 
 function formatDate(value, localeTag) {
     if (!value) return '-';
@@ -106,7 +93,7 @@ function computeEditorsPickScore(article) {
 }
 
 function ArticleCard({ article, intlLocale, t }) {
-    const imageUrl = resolveImageUrl(article?.featured_image || '');
+    const imageUrl = articleImageUrl(article);
     const readingMinutes = estimateReadingMinutes(article);
 
     return (
@@ -114,7 +101,7 @@ function ArticleCard({ article, intlLocale, t }) {
             <Link to={`/reader/articles/${article.slug || article.id}`} className="reader-portal-news-card-media block h-40 bg-slate-100">
                 <div className="h-full w-full">
                     {imageUrl ? (
-                        <img src={imageUrl} alt={article?.featured_image_alt || article?.title || '-'} className="w-full h-full object-cover" />
+                        <img src={imageUrl} alt={article?.featured_image_alt || article?.title || '-'} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                     ) : (
                         <div className="w-full h-full bg-gradient-to-br from-slate-200 via-slate-100 to-slate-300" />
                     )}
@@ -155,7 +142,7 @@ function SidebarPopularItem({ article, rank, intlLocale }) {
             <div className="min-w-0 flex-1 flex items-start gap-2">
                 <div className="h-11 w-14 shrink-0 overflow-hidden rounded bg-slate-100">
                     {article.featured_image ? (
-                        <img src={resolveImageUrl(article.featured_image)} alt={article.title || '-'} className="h-full w-full object-cover" />
+                        <img src={articleImageUrl(article)} alt={article.title || '-'} className="h-full w-full object-cover" loading="lazy" decoding="async" />
                     ) : (
                         <div className="h-full w-full bg-gradient-to-br from-slate-200 via-slate-100 to-slate-300" />
                     )}
@@ -456,9 +443,10 @@ export default function ReaderHomePage() {
                                     <Link to={`/reader/articles/${heroArticle.slug || heroArticle.id}`} className="reader-home-portal-hero-media block h-[340px] sm:h-[380px]">
                                         {heroArticle.featured_image ? (
                                             <img
-                                                src={resolveImageUrl(heroArticle.featured_image)}
+                                                src={articleImageUrl(heroArticle)}
                                                 alt={heroArticle.featured_image_alt || heroArticle.title || '-'}
                                                 className="h-full w-full object-cover"
+                                                decoding="async"
                                             />
                                         ) : (
                                             <div className="h-full w-full bg-gradient-to-br from-slate-300 via-slate-100 to-slate-200" />

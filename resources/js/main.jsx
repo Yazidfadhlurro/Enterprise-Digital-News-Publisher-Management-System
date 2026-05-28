@@ -18,7 +18,6 @@ class AppErrorBoundary extends React.Component {
     }
 
     componentDidCatch(error) {
-        // Keep error visible in devtools for debugging runtime failures.
         console.error('App runtime error:', error);
     }
 

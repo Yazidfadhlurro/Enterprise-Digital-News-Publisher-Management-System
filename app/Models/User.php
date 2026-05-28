@@ -23,6 +23,7 @@ class User extends Authenticatable
         'bio',
         'password',
         'role',
+        'auth_scope',
         'assigned_reviewer_id',
         'avatar',
         'status',
@@ -36,13 +37,10 @@ class User extends Authenticatable
         'email_verification_code',
     ];
 
-    protected function casts(): array
-    {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
-    }
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+        'password' => 'hashed',
+    ];
 
     // ====================================
     // Role Methods
@@ -71,6 +69,25 @@ class User extends Authenticatable
     public function isUser(): bool
     {
         return $this->hasRole('user');
+    }
+
+    public function authScope(): string
+    {
+        if (!blank($this->auth_scope)) {
+            return (string) $this->auth_scope;
+        }
+
+        return $this->isUser() ? 'public' : 'internal';
+    }
+
+    public function isPublicUser(): bool
+    {
+        return $this->authScope() === 'public';
+    }
+
+    public function isInternalUser(): bool
+    {
+        return $this->authScope() === 'internal';
     }
 
     // ====================================
@@ -108,7 +125,7 @@ class User extends Authenticatable
 
     public function generateVerificationCode(): string
     {
-        return str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
+        return str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
     }
 
     // ====================================
@@ -164,7 +181,9 @@ class User extends Authenticatable
 
     public function hasArticle($articleId): bool
     {
-        // TODO: Implement article relationship when available
-        return false;
+        return \Illuminate\Support\Facades\DB::table('articles')
+            ->where('id', $articleId)
+            ->where('author_id', $this->id)
+            ->exists();
     }
 }

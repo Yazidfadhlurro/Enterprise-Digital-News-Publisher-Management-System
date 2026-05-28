@@ -1,0 +1,109 @@
+# Laravel defaults
+/node_modules
+/public/build
+/public/hot
+/public/storage
+/storage/
+/vendor
+/storage/*.key
+/storage/pail
+/bootstrap/cache/*.php
+/auth.json
+Homestead.json
+Homestead.yaml
+
+# Environment & Configuration
+.env
+.env.*
+!.env.example
+config.local.php
+config.local.json
+
+# Database
+*.sqlite
+*.sqlite3
+*.db
+*.sql
+*.dump
+database.sqlite
+
+# Auth & Keys
+/storage/oauth-*.key
+*.pem
+*.key
+*.crt
+*.cer
+*.p12
+*.pfx
+composer-auth.json
+
+# Credentials & Secrets
+secrets.json
+credentials.json
+*.secret
+.htpasswd
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*~
+*.bak
+*.backup
+*.old
+*.cache
+
+# OS generated files
+.DS_Store
+.DS_Store?
+ehthumbs.db
+ehthumbs_vista.db
+Icon?
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# IDE & Editors
+.vscode/
+.idea/
+.fleet
+.nova
+.zed
+.c9/
+.phpactor.json
+.git/cursor/
+*.sublime-workspace
+*.sublime-project
+*.code-workspace
+*.iml
+.project
+.settings/
+.classpath
+*.launch
+.buildpath
+
+# Testing & Coverage
+/coverage/
+/.phpunit.cache/
+.phpunit.result.cache
+
+# Build & Compiled
+/build/
+/dist/
+*.compiled
+
+# Logs & Debug
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+debug.log
+/storage/logs/*.log
+/storage/logs/*.log.*
+
+# Package Manager
+composer.phar
+pnpm-lock.yaml
+
