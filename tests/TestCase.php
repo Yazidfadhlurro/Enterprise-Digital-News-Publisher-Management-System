@@ -6,5 +6,11 @@ use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 
 abstract class TestCase extends BaseTestCase
 {
-    // Laravel 12 boots the application from bootstrap/app.php.
+    protected function migrateDatabases()
+    {
+        $this->artisan('migrate:fresh', array_merge(
+            $this->migrateFreshUsing(),
+            ['--force' => true]
+        ));
+    }
 }
