@@ -99,7 +99,7 @@ class ReviewerFeatureTest extends TestCase
         $author = $this->author($rev->id);
         $id = $this->makePendingArticle($author->id, $rev->id);
         $this->actingAs($rev);
-        $this->postJson("/api/reviewer/articles/{$id}/reject", ['note' => 'Needs work'])
+        $this->postJson("/api/reviewer/articles/{$id}/reject", ['review_notes' => 'Needs work here'])
             ->assertOk()->assertJsonPath('status', 'success');
         $this->assertDatabaseHas('articles', ['id' => $id, 'status' => 'revision']);
     }

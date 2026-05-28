@@ -389,10 +389,6 @@ class ReviewerArticleController extends Controller
 
     public function reject(Request $request, int $id): JsonResponse
     {
-        $request->validate([
-            'review_notes' => ['required', 'string', 'min:10', 'max:500'],
-        ]);
-
         $article = DB::table('articles')->where('id', $id)->first();
 
         if (!$article) {
@@ -402,18 +398,22 @@ class ReviewerArticleController extends Controller
             ], 404);
         }
 
-        if (!in_array($article->status, self::REVIEW_STATUSES, true)) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Berita tidak berada dalam tahap review.',
-            ], 422);
-        }
-
         if (!$this->canActorReviewAuthor($request->user(), (int) $article->author_id)) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Berita ini tidak masuk assignment editor Anda.',
             ], 403);
+        }
+
+        $request->validate([
+            'review_notes' => ['required', 'string', 'min:10', 'max:500'],
+        ]);
+
+        if (!in_array($article->status, self::REVIEW_STATUSES, true)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Berita tidak berada dalam tahap review.',
+            ], 422);
         }
 
         $note = ContentSanitizer::sanitizePlainText($request->input('review_notes'));
