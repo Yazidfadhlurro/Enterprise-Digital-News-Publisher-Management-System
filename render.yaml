@@ -1,0 +1,69 @@
+services:
+  - type: web
+    name: portal-berita
+    runtime: docker
+    dockerfilePath: ./Dockerfile.render
+    plan: free
+    healthCheckPath: /up
+    envVars:
+      - key: APP_NAME
+        value: "Portal Berita"
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: "false"
+      - key: APP_KEY
+        generateValue: true
+      - key: APP_URL
+        fromService:
+          type: web
+          name: portal-berita
+          property: host
+      - key: DB_CONNECTION
+        value: pgsql
+      - key: DB_HOST
+        fromDatabase:
+          name: portal-berita-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: portal-berita-db
+          property: port
+      - key: DB_DATABASE
+        fromDatabase:
+          name: portal-berita-db
+          property: database
+      - key: DB_USERNAME
+        fromDatabase:
+          name: portal-berita-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: portal-berita-db
+          property: password
+      - key: SESSION_DRIVER
+        value: database
+      - key: CACHE_STORE
+        value: database
+      - key: QUEUE_CONNECTION
+        value: database
+      - key: FILESYSTEM_DISK
+        value: local
+      - key: SESSION_SECURE_COOKIE
+        value: "true"
+      - key: MAIL_MAILER
+        value: smtp
+      - key: MAIL_HOST
+        value: smtp.gmail.com
+      - key: MAIL_PORT
+        value: "587"
+      - key: MAIL_ENCRYPTION
+        value: tls
+      - key: MAIL_USERNAME
+        sync: false
+      - key: MAIL_PASSWORD
+        sync: false
+      - key: MAIL_FROM_ADDRESS
+        sync: false
+      - key: MAIL_FROM_NAME
+        value: "Portal Berita"
