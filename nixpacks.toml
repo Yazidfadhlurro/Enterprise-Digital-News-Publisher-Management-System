@@ -10,6 +10,7 @@ cmds = [
 [phases.build]
 cmds = [
     "npm run build",
+    "mkdir -p storage/framework/views storage/framework/sessions storage/framework/cache/data storage/logs storage/app/public",
     "php artisan config:cache",
     "php artisan route:cache",
     "php artisan view:cache"
