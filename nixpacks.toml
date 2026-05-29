@@ -1,5 +1,5 @@
 [phases.setup]
-nixPkgs = ["php83", "php83Extensions.pdo", "php83Extensions.pdo_pgsql", "php83Extensions.pgsql", "php83Extensions.mbstring", "php83Extensions.xml", "php83Extensions.curl", "php83Extensions.zip", "php83Extensions.gd", "php83Extensions.tokenizer", "php83Extensions.fileinfo", "php83Extensions.dom", "php83Extensions.bcmath", "nodejs_20", "nodePackages.npm"]
+nixPkgs = ["php83", "php83Packages.composer", "php83Extensions.pdo", "php83Extensions.pdo_pgsql", "php83Extensions.pgsql", "php83Extensions.mbstring", "php83Extensions.xml", "php83Extensions.curl", "php83Extensions.zip", "php83Extensions.gd", "php83Extensions.tokenizer", "php83Extensions.fileinfo", "php83Extensions.dom", "php83Extensions.bcmath", "nodejs_20", "nodePackages.npm"]
 
 [phases.install]
 cmds = [
