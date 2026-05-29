@@ -14,4 +14,4 @@ cmds = [
 ]
 
 [start]
-cmd = "php artisan config:clear && php artisan migrate --force && php artisan storage:link && php artisan serve --host=0.0.0.0 --port=$PORT"
+cmd = "php artisan config:clear && php artisan migrate --force && php artisan storage:link && php artisan queue:work --daemon --tries=3 --timeout=90 & php artisan serve --host=0.0.0.0 --port=$PORT"
