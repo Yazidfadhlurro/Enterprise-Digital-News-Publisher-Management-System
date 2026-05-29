@@ -35,6 +35,8 @@ Route::prefix('public/auth')->middleware([
         ->middleware('throttle:5,1');
     Route::post('/verify-email', [AuthController::class, 'verifyEmailPublic'])
         ->middleware('throttle:5,1');
+    Route::post('/resend-verification', [AuthController::class, 'resendVerification'])
+        ->middleware('throttle:3,1');
     Route::get('/invites/{token}', [RegistrationInviteController::class, 'showPublic'])
         ->middleware('throttle:30,1');
 });

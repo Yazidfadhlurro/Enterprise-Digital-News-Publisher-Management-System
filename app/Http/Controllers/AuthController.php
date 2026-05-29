@@ -404,13 +404,20 @@ class AuthController extends Controller
             ], 500);
         }
 
+        $emailSent = false;
         try {
             Mail::to($user->email)->send(new SendVerificationCode($user, $verificationCode));
+            $emailSent = true;
         } catch (\Exception $e) {
-            Log::warning('Registrasi berhasil tapi email verifikasi gagal dikirim', [
+            Log::error('Email verifikasi gagal dikirim', [
                 'user_id' => $user->id,
                 'email' => $email,
-                'error' => $e->getMessage(),
+                'error_class' => get_class($e),
+                'error_message' => $e->getMessage(),
+                'mail_host' => config('mail.mailers.smtp.host'),
+                'mail_port' => config('mail.mailers.smtp.port'),
+                'mail_username' => config('mail.mailers.smtp.username'),
+                'mail_encryption' => config('mail.mailers.smtp.encryption'),
             ]);
         }
 
@@ -419,7 +426,10 @@ class AuthController extends Controller
             'message' => 'Registrasi berhasil. Silakan verifikasi email untuk masuk.',
             'data' => [
                 'user' => $user->only(['id', 'name', 'email', 'role', 'status', 'assigned_reviewer_id']),
-                'message' => 'Kode verifikasi sudah dikirim ke email Anda.',
+                'message' => $emailSent
+                    ? 'Kode verifikasi sudah dikirim ke email Anda.'
+                    : 'Registrasi berhasil, namun email verifikasi gagal dikirim. Gunakan fitur kirim ulang kode.',
+                'email_sent' => $emailSent,
             ]
         ], 201);
     }
@@ -680,6 +690,46 @@ class AuthController extends Controller
         ], 200);
     }
 
+
+    public function resendVerification(Request $request)
+    {
+        $validated = $request->validate([
+            'email' => 'required|string|email',
+        ]);
+
+        $user = User::where('email', trim($validated['email']))->first();
+
+        if (!$user || $user->isEmailVerified()) {
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Jika email terdaftar dan belum diverifikasi, kode baru telah dikirim.',
+            ]);
+        }
+
+        $verificationCode = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+        $user->update(['email_verification_code' => $verificationCode]);
+
+        try {
+            Mail::to($user->email)->send(new SendVerificationCode($user, $verificationCode));
+        } catch (\Exception $e) {
+            Log::error('Resend email verifikasi gagal', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'error_class' => get_class($e),
+                'error_message' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Gagal mengirim email. Silakan coba beberapa saat lagi.',
+            ], 500);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Jika email terdaftar dan belum diverifikasi, kode baru telah dikirim.',
+        ]);
+    }
 
     public function verifyEmail(Request $request)
     {
