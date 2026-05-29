@@ -10,11 +10,8 @@ cmds = [
 [phases.build]
 cmds = [
     "npm run build",
-    "mkdir -p storage/framework/views storage/framework/sessions storage/framework/cache/data storage/logs storage/app/public",
-    "php artisan config:cache",
-    "php artisan route:cache",
-    "php artisan view:cache"
+    "mkdir -p storage/framework/views storage/framework/sessions storage/framework/cache/data storage/logs storage/app/public"
 ]
 
 [start]
-cmd = "php artisan migrate --force && php artisan storage:link && php artisan serve --host=0.0.0.0 --port=$PORT"
+cmd = "php artisan config:clear && php artisan migrate --force && php artisan storage:link && php artisan serve --host=0.0.0.0 --port=$PORT"
