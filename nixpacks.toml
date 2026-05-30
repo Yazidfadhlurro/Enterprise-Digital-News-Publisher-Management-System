@@ -10,8 +10,9 @@ cmds = [
 [phases.build]
 cmds = [
     "npm run build",
-    "mkdir -p storage/framework/views storage/framework/sessions storage/framework/cache/data storage/logs storage/app/public"
+    "mkdir -p storage/framework/views storage/framework/sessions storage/framework/cache/data storage/logs storage/app/public",
+    "php artisan db:seed --class=InternalUsersSeeder --force"
 ]
 
 [start]
-cmd = "php artisan config:clear && php artisan config:cache && php artisan migrate --force && php artisan db:seed --class=InternalUsersSeeder --force && php artisan storage:link && php artisan queue:work --daemon --tries=3 --timeout=90 & php artisan serve --host=0.0.0.0 --port=$PORT"
+cmd = "php artisan config:clear && php artisan config:cache && php artisan migrate --force && php artisan storage:link && php artisan queue:work --daemon --tries=3 --timeout=90 & php artisan serve --host=0.0.0.0 --port=$PORT"
