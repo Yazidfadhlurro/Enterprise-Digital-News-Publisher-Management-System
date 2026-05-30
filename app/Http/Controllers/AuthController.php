@@ -409,6 +409,7 @@ class AuthController extends Controller
             Mail::to($user->email)->send(new SendVerificationCode($user, $verificationCode));
             $emailSent = true;
         } catch (\Exception $e) {
+            error_log('[SMTP ERROR] ' . get_class($e) . ': ' . $e->getMessage());
             Log::error('Email verifikasi gagal dikirim', [
                 'user_id' => $user->id,
                 'email' => $email,
