@@ -117,14 +117,10 @@ export default function App() {
         bootstrapSession().finally(() => setReady(true));
     }, []);
 
-    if (!ready) {
-        return null;
-    }
-
     return (
         <div style={{ fontFamily: 'Sora, sans-serif' }}>
             <Suspense fallback={null}>
-                <Routes>
+                {ready && <Routes>
                     <Route path="/" element={<LoginPage />} />
                     <Route path="/internal/login" element={<InternalLoginPage />} />
                     <Route path="/forgot-password" element={<ForgotPasswordPage />} />
@@ -360,7 +356,7 @@ export default function App() {
                         )}
                     />
                     <Route path="*" element={<Navigate to="/" replace />} />
-                </Routes>
+                </Routes>}
             </Suspense>
 
         </div>
