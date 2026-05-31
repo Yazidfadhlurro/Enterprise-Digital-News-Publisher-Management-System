@@ -21,6 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Global input sanitization: strips null bytes, control characters from all requests.
         $middleware->api(append: [
+            \App\Http\Middleware\NormalizeCsrfToken::class,
             \App\Http\Middleware\SanitizeInput::class,
         ]);
 

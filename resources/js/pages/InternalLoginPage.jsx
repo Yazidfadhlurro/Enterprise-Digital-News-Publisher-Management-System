@@ -74,7 +74,7 @@ export default function InternalLoginPage() {
         const token = getToken();
         const user = getUser();
 
-        if (!token) {
+        if (!token || !user) {
             return;
         }
 

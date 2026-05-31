@@ -147,6 +147,13 @@ class AuthController extends Controller
             ], 403);
         }
 
+        if ($user->isInactive()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Akun Anda tidak aktif. Hubungi admin untuk bantuan.',
+            ], 403);
+        }
+
         if ($user->needsEmailVerification()) {
             return response()->json([
                 'status' => 'error',

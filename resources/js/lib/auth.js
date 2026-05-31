@@ -9,9 +9,12 @@ export function getToken() {
 
 export function getUser() {
     try {
-        return JSON.parse(localStorage.getItem('user') || '{}');
+        const parsed = JSON.parse(localStorage.getItem('user') || 'null');
+        // Return null if no valid user object (must have at least an id)
+        if (!parsed || !parsed.id) return null;
+        return parsed;
     } catch (_) {
-        return {};
+        return null;
     }
 }
 
@@ -38,6 +41,12 @@ export function clearAuth() {
 }
 
 export async function bootstrapSession() {
+    // Only attempt to restore session if we have a stored session marker
+    const marker = localStorage.getItem(SESSION_MARKER_KEY);
+    if (marker !== '1') {
+        return false;
+    }
+
     try {
         const payload = await apiRequest('/auth/me');
 
@@ -46,15 +55,15 @@ export async function bootstrapSession() {
             return true;
         }
 
-        // Hanya clear jika tidak ada user tersimpan (bukan sekadar session expired sementara)
-        const existing = getUser();
-        if (!existing || !existing.id) {
-            clearAuth();
-        }
+        // Session expired or invalid — clear auth state
+        clearAuth();
         return false;
     } catch (e) {
-        // Jangan logout paksa saat network error atau 401 sementara
-        // Biarkan RequireAuth/RequireReader yang handle redirect
+        // On 401 (session expired), clear auth so user is redirected to login
+        if (e?.message && (e.message.includes('401') || e.message.includes('Unauthenticated') || e.message.includes('Silakan login'))) {
+            clearAuth();
+        }
+        // For network errors, keep existing auth state so offline users aren't logged out
         return false;
     }
 }

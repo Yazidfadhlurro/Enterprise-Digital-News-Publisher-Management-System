@@ -156,7 +156,14 @@ return [
     |
     */
 
-    'domain' => env('SESSION_DOMAIN'),
+    'domain' => (function () {
+        $domain = env('SESSION_DOMAIN');
+        // Empty string from Railway env vars should be treated as null
+        if ($domain === '' || $domain === 'null') {
+            return null;
+        }
+        return $domain;
+    })(),
 
     /*
     |--------------------------------------------------------------------------

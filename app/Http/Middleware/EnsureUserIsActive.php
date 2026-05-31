@@ -22,6 +22,13 @@ class EnsureUserIsActive
             ], 403);
         }
 
+        if ($user->isInactive()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Akun Anda tidak aktif. Hubungi admin untuk bantuan.',
+            ], 403);
+        }
+
         return $next($request);
     }
 }

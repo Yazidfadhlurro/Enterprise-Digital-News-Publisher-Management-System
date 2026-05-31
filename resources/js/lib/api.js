@@ -29,45 +29,28 @@ async function ensureCsrfCookie() {
             async function doFetch() {
                 const response = await fetch('/sanctum/csrf-cookie', {
                     method: 'GET',
-                    // use include to be resilient across dev setups and ports
                     credentials: 'include',
-                    headers: {
-                        Accept: 'application/json',
-                    },
+                    headers: { Accept: 'application/json' },
                     cache: 'no-store',
                 });
-
-                if (!response.ok) {
-                    throw new Error('Gagal memuat CSRF cookie.');
-                }
-
+                // Don't throw on non-ok — cookie may still be set
                 return response;
             }
 
-            // first attempt
             await doFetch();
 
-            // ensure the cookie is actually present (some environments require include/retry)
+            // Retry once if cookie still not present
             if (!getXsrfToken()) {
-                // retry once
                 await doFetch();
-                if (!getXsrfToken()) {
-                    throw new Error('Gagal memuat CSRF cookie; periksa konfigurasi cookie/domain (SANCTUM_STATEFUL_DOMAINS, SESSION_DOMAIN).');
-                }
             }
 
+            // If still no cookie, continue anyway — NormalizeCsrfToken middleware
+            // on the server will read the XSRF-TOKEN cookie directly from the request.
             return true;
         })().catch((error) => {
             csrfCookiePromise = null;
             throw error;
         });
-    }
-
-    await csrfCookiePromise;
-
-    if (!getXsrfToken()) {
-        csrfCookiePromise = null;
-        return ensureCsrfCookie();
     }
 
     return csrfCookiePromise;
@@ -142,10 +125,10 @@ export async function apiRequest(path, options = {}) {
         if (isFormData) {
             payloadBody = body;
         } else {
-            // Some legacy auth endpoints in this project expect form-encoded
-            // payloads. Detect login routes and send URL-encoded body to
-            // avoid server-side JSON parsing edge-cases.
-            const isAuthLogin = /auth\/(login|register)/i.test(String(path));
+            // Legacy auth endpoints expect form-encoded payloads.
+            // Only apply to the legacy /auth/* routes, NOT the scoped
+            // /public/auth/* or /internal/auth/* routes which accept JSON.
+            const isAuthLogin = /^\/auth\/(login|register)/i.test(String(path));
 
             if (isAuthLogin) {
                 finalHeaders['Content-Type'] = 'application/x-www-form-urlencoded';

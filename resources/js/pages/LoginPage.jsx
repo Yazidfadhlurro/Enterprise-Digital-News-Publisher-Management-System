@@ -80,7 +80,7 @@ export default function LoginPage() {
         const token = getToken();
         const user = getUser();
 
-        if (!token) {
+        if (!token || !user) {
             return;
         }
 

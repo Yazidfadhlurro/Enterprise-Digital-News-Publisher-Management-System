@@ -49,8 +49,8 @@ function RequireAuth({ children }) {
 function RequireAdmin({ children }) {
     const token = getToken();
     const user = getUser();
-    if (!token) return <Navigate to="/" replace />;
-    if (user?.role !== 'admin') return <Navigate to="/welcome" replace />;
+    if (!token || !user) return <Navigate to="/" replace />;
+    if (user.role !== 'admin') return <Navigate to="/welcome" replace />;
     return children;
 }
 
