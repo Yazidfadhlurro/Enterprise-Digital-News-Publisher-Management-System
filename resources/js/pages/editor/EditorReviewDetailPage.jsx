@@ -102,15 +102,16 @@ export default function EditorReviewDetailPage() {
     );
 
     async function submitDecision(type) {
-        if (!article) {
+        if (!article) return;
+
+        if (type === 'reject' && !reviewNotes.trim()) {
+            setError(t('editor.reviewDetail.rejectNoteRequired', 'Isi catatan revisi terlebih dahulu agar penulis tahu apa yang perlu diperbaiki.'));
             return;
         }
 
-        if (type === 'approve' && !checklistAllPassed) {
-            if (!reviewNotes.trim()) {
-                setError(t('editor.reviewDetail.checklistNotPassed', 'Checklist editorial belum lengkap. Isi catatan revisi sebagai justifikasi sebelum mempublikasikan.'));
-                return;
-            }
+        if (type === 'approve' && !checklistAllPassed && !reviewNotes.trim()) {
+            setError(t('editor.reviewDetail.checklistNotPassed', 'Checklist belum lengkap. Isi catatan sebagai justifikasi untuk tetap mempublikasikan.'));
+            return;
         }
 
         const token = getToken();
@@ -238,7 +239,7 @@ export default function EditorReviewDetailPage() {
                             {submittingAction === 'approve' ? t('common.processing', 'Memproses...') : t('editor.reviewDetail.approvePublish', 'Setujui & Publikasikan')}
                         </button>
                         {!checklistAllPassed && (
-                            <p className="mt-1 text-[11px] text-amber-600">Checklist belum lengkap — isi catatan revisi untuk tetap mempublikasikan.</p>
+                            <p className="mt-1 text-[11px] text-amber-600">Checklist belum lengkap — isi catatan jika ingin tetap mempublikasikan.</p>
                         )}
 
                         <button
@@ -249,6 +250,7 @@ export default function EditorReviewDetailPage() {
                         >
                             {submittingAction === 'reject' ? t('common.processing', 'Memproses...') : t('editor.reviewDetail.returnToAuthor', 'Kembalikan ke Penulis')}
                         </button>
+                        <p className="mt-1 text-[11px] text-slate-400">Catatan revisi wajib diisi saat mengembalikan ke penulis.</p>
 
                         <div className="mt-4">
                             <label htmlFor="review_notes" className="block text-sm font-semibold text-slate-700 mb-1">{t('editor.reviewDetail.revisionNotes', 'Catatan Revisi')}</label>
