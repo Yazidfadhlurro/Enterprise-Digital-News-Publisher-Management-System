@@ -85,9 +85,13 @@ const Fallback = () => (
 );
 
 export default function App() {
+    const [ready, setReady] = React.useState(false);
+
     useEffect(() => {
-        void bootstrapSession();
+        bootstrapSession().finally(() => setReady(true));
     }, []);
+
+    if (!ready) return <Fallback />;
 
     return (
         <div style={{ fontFamily: 'Sora, sans-serif' }}>

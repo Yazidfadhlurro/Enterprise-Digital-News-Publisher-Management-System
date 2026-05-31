@@ -1,6 +1,49 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\DB;
+
+// ── Debug endpoint (hapus setelah masalah teridentifikasi) ──────────────────
+Route::get('/debug-info', function () {
+    $checks = [];
+
+    // 1. APP_KEY
+    $checks['app_key_set'] = !empty(config('app.key'));
+
+    // 2. DB connection
+    try {
+        DB::connection()->getPdo();
+        $checks['db_connected'] = true;
+        $checks['db_tables'] = DB::select("SELECT tablename FROM pg_tables WHERE schemaname='public'");
+    } catch (\Throwable $e) {
+        $checks['db_connected'] = false;
+        $checks['db_error'] = $e->getMessage();
+    }
+
+    // 3. Sessions table
+    try {
+        $checks['sessions_table'] = DB::table('sessions')->count() >= 0 ? 'exists' : 'exists';
+    } catch (\Throwable $e) {
+        $checks['sessions_table'] = 'MISSING: ' . $e->getMessage();
+    }
+
+    // 4. Build assets
+    $manifestPath = public_path('build/manifest.json');
+    $checks['manifest_exists'] = file_exists($manifestPath);
+    if ($checks['manifest_exists']) {
+        $manifest = json_decode(file_get_contents($manifestPath), true);
+        $checks['main_js'] = isset($manifest['resources/js/main.jsx']) ? $manifest['resources/js/main.jsx']['file'] : 'NOT FOUND';
+    }
+
+    // 5. Env
+    $checks['app_env'] = config('app.env');
+    $checks['app_url'] = config('app.url');
+    $checks['session_driver'] = config('session.driver');
+    $checks['sanctum_stateful'] = config('sanctum.stateful');
+
+    return response()->json($checks);
+});
+// ───────────────────────────────────────────────────────────────────────────
 
 $spa = function () {
     return response(view('spa'))
