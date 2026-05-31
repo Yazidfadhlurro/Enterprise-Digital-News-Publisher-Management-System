@@ -24,7 +24,7 @@ class AppErrorBoundary extends React.Component {
     render() {
         if (this.state.hasError) {
             return (
-                <div className="min-h-screen flex items-center justify-center bg-slate-100 p-4">
+                <div style={{ position: 'fixed', inset: 0, zIndex: 9999 }} className="flex items-center justify-center bg-slate-100 p-4">
                     <div className="max-w-md w-full rounded-xl border border-slate-200 bg-white p-6 text-center shadow-sm">
                         <h1 className="text-xl font-semibold text-slate-900">Halaman gagal dimuat</h1>
                         <p className="mt-2 text-sm text-slate-600">Terjadi kesalahan runtime pada aplikasi. Silakan refresh halaman.</p>
