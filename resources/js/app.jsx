@@ -42,73 +42,47 @@ const ReaderSettingsPage = lazy(() => import('./pages/reader/ReaderSettingsPage'
 
 function RequireAuth({ children }) {
     const token = getToken();
-
-    if (!token) {
-        return <Navigate to="/" replace />;
-    }
-
+    if (!token) return <Navigate to="/" replace />;
     return children;
 }
 
 function RequireAdmin({ children }) {
     const token = getToken();
     const user = getUser();
-
-    if (!token) {
-        return <Navigate to="/" replace />;
-    }
-
-    if (user?.role !== 'admin') {
-        return <Navigate to="/welcome" replace />;
-    }
-
+    if (!token) return <Navigate to="/" replace />;
+    if (user?.role !== 'admin') return <Navigate to="/welcome" replace />;
     return children;
 }
 
 function RequireReviewer({ children }) {
     const token = getToken();
     const user = getUser();
-
-    if (!token) {
-        return <Navigate to="/" replace />;
-    }
-
-    if (!user || (user.role !== 'reviewer' && user.role !== 'admin')) {
-        return <Navigate to="/welcome" replace />;
-    }
-
+    if (!token) return <Navigate to="/" replace />;
+    if (!user || (user.role !== 'reviewer' && user.role !== 'admin')) return <Navigate to="/welcome" replace />;
     return children;
 }
 
 function RequireAuthor({ children }) {
     const token = getToken();
     const user = getUser();
-
-    if (!token) {
-        return <Navigate to="/" replace />;
-    }
-
-    if (!user || (user.role !== 'author' && user.role !== 'admin')) {
-        return <Navigate to="/welcome" replace />;
-    }
-
+    if (!token) return <Navigate to="/" replace />;
+    if (!user || (user.role !== 'author' && user.role !== 'admin')) return <Navigate to="/welcome" replace />;
     return children;
 }
 
 function RequireReader({ children }) {
     const token = getToken();
     const user = getUser();
-
-    if (!token) {
-        return <Navigate to="/" replace />;
-    }
-
-    if (!user || (user.role !== 'user' && user.role !== 'admin')) {
-        return <Navigate to="/welcome" replace />;
-    }
-
+    if (!token) return <Navigate to="/" replace />;
+    if (!user || (user.role !== 'user' && user.role !== 'admin')) return <Navigate to="/welcome" replace />;
     return children;
 }
+
+const Fallback = () => (
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc', color: '#64748b', fontFamily: 'sans-serif', fontSize: '0.9rem' }}>
+        Memuat...
+    </div>
+);
 
 export default function App() {
     useEffect(() => {
@@ -117,7 +91,7 @@ export default function App() {
 
     return (
         <div style={{ fontFamily: 'Sora, sans-serif' }}>
-            <Suspense fallback={null}>
+            <Suspense fallback={<Fallback />}>
                 <Routes>
                     <Route path="/" element={<LoginPage />} />
                     <Route path="/internal/login" element={<InternalLoginPage />} />
@@ -126,233 +100,37 @@ export default function App() {
                     <Route path="/register" element={<RegisterPage />} />
                     <Route path="/verify-email" element={<VerifyEmailPage />} />
                     <Route path="/invite/:token" element={<RegisterPage />} />
-                    <Route
-                        path="/welcome"
-                        element={(
-                            <RequireAuth>
-                                <WelcomePage />
-                            </RequireAuth>
-                        )}
-                    />
-                    <Route
-                        path="/admin/dashboard"
-                        element={(
-                            <RequireAdmin>
-                                <AdminDashboardPage />
-                            </RequireAdmin>
-                        )}
-                    />
-                    <Route
-                        path="/admin/articles"
-                        element={(
-                            <RequireAdmin>
-                                <AdminArticlesPage />
-                            </RequireAdmin>
-                        )}
-                    />
-                    <Route
-                        path="/admin/categories"
-                        element={(
-                            <RequireAdmin>
-                                <AdminCategoriesPage />
-                            </RequireAdmin>
-                        )}
-                    />
-                    <Route
-                        path="/admin/users"
-                        element={(
-                            <RequireAdmin>
-                                <AdminUsersPage />
-                            </RequireAdmin>
-                        )}
-                    />
-                    <Route
-                        path="/admin/assignments"
-                        element={(
-                            <RequireAdmin>
-                                <AdminAssignmentMatrixPage />
-                            </RequireAdmin>
-                        )}
-                    />
-                    <Route
-                        path="/admin/activities"
-                        element={(
-                            <RequireAdmin>
-                                <AdminActivityPage />
-                            </RequireAdmin>
-                        )}
-                    />
-                    <Route
-                        path="/admin/feedback"
-                        element={(
-                            <RequireAdmin>
-                                <AdminFeedbackPage />
-                            </RequireAdmin>
-                        )}
-                    />
-                    <Route
-                        path="/admin/permissions"
-                        element={(
-                            <RequireAdmin>
-                                <AdminPermissionsPage />
-                            </RequireAdmin>
-                        )}
-                    />
-                    <Route
-                        path="/admin/settings"
-                        element={(
-                            <RequireAdmin>
-                                <AdminSettingsPage />
-                            </RequireAdmin>
-                        )}
-                    />
+                    <Route path="/welcome" element={<RequireAuth><WelcomePage /></RequireAuth>} />
+                    <Route path="/admin/dashboard" element={<RequireAdmin><AdminDashboardPage /></RequireAdmin>} />
+                    <Route path="/admin/articles" element={<RequireAdmin><AdminArticlesPage /></RequireAdmin>} />
+                    <Route path="/admin/categories" element={<RequireAdmin><AdminCategoriesPage /></RequireAdmin>} />
+                    <Route path="/admin/users" element={<RequireAdmin><AdminUsersPage /></RequireAdmin>} />
+                    <Route path="/admin/assignments" element={<RequireAdmin><AdminAssignmentMatrixPage /></RequireAdmin>} />
+                    <Route path="/admin/activities" element={<RequireAdmin><AdminActivityPage /></RequireAdmin>} />
+                    <Route path="/admin/feedback" element={<RequireAdmin><AdminFeedbackPage /></RequireAdmin>} />
+                    <Route path="/admin/permissions" element={<RequireAdmin><AdminPermissionsPage /></RequireAdmin>} />
+                    <Route path="/admin/settings" element={<RequireAdmin><AdminSettingsPage /></RequireAdmin>} />
                     <Route path="/editor" element={<Navigate to="/editor/review" replace />} />
-                    <Route
-                        path="/editor/dashboard"
-                        element={(
-                            <RequireReviewer>
-                                <EditorDashboardPage />
-                            </RequireReviewer>
-                        )}
-                    />
-                    <Route
-                        path="/editor/review"
-                        element={(
-                            <RequireReviewer>
-                                <EditorReviewPage />
-                            </RequireReviewer>
-                        )}
-                    />
-                    <Route
-                        path="/editor/review/:id"
-                        element={(
-                            <RequireReviewer>
-                                <EditorReviewDetailPage />
-                            </RequireReviewer>
-                        )}
-                    />
-                    <Route
-                        path="/editor/published"
-                        element={(
-                            <RequireReviewer>
-                                <EditorPublishedPage />
-                            </RequireReviewer>
-                        )}
-                    />
-                    <Route
-                        path="/editor/activities"
-                        element={(
-                            <RequireReviewer>
-                                <EditorActivityPage />
-                            </RequireReviewer>
-                        )}
-                    />
-                    <Route
-                        path="/editor/feedback"
-                        element={(
-                            <RequireReviewer>
-                                <EditorFeedbackPage />
-                            </RequireReviewer>
-                        )}
-                    />
-                    <Route
-                        path="/editor/settings"
-                        element={(
-                            <RequireReviewer>
-                                <EditorSettingsPage />
-                            </RequireReviewer>
-                        )}
-                    />
+                    <Route path="/editor/dashboard" element={<RequireReviewer><EditorDashboardPage /></RequireReviewer>} />
+                    <Route path="/editor/review" element={<RequireReviewer><EditorReviewPage /></RequireReviewer>} />
+                    <Route path="/editor/review/:id" element={<RequireReviewer><EditorReviewDetailPage /></RequireReviewer>} />
+                    <Route path="/editor/published" element={<RequireReviewer><EditorPublishedPage /></RequireReviewer>} />
+                    <Route path="/editor/activities" element={<RequireReviewer><EditorActivityPage /></RequireReviewer>} />
+                    <Route path="/editor/feedback" element={<RequireReviewer><EditorFeedbackPage /></RequireReviewer>} />
+                    <Route path="/editor/settings" element={<RequireReviewer><EditorSettingsPage /></RequireReviewer>} />
                     <Route path="/author" element={<Navigate to="/author/dashboard" replace />} />
-                    <Route
-                        path="/author/dashboard"
-                        element={(
-                            <RequireAuthor>
-                                <AuthorDashboardPage />
-                            </RequireAuthor>
-                        )}
-                    />
-                    <Route
-                        path="/author/articles"
-                        element={(
-                            <RequireAuthor>
-                                <AuthorArticlesPage />
-                            </RequireAuthor>
-                        )}
-                    />
-                    <Route
-                        path="/author/articles/create"
-                        element={(
-                            <RequireAuthor>
-                                <AuthorArticleFormPage />
-                            </RequireAuthor>
-                        )}
-                    />
-                    <Route
-                        path="/author/articles/:id/edit"
-                        element={(
-                            <RequireAuthor>
-                                <AuthorArticleFormPage />
-                            </RequireAuthor>
-                        )}
-                    />
-                    <Route
-                        path="/author/activities"
-                        element={(
-                            <RequireAuthor>
-                                <AuthorActivityPage />
-                            </RequireAuthor>
-                        )}
-                    />
-                    <Route
-                        path="/author/feedback"
-                        element={(
-                            <RequireAuthor>
-                                <AuthorFeedbackPage />
-                            </RequireAuthor>
-                        )}
-                    />
-                    <Route
-                        path="/author/settings"
-                        element={(
-                            <RequireAuthor>
-                                <AuthorSettingsPage />
-                            </RequireAuthor>
-                        )}
-                    />
+                    <Route path="/author/dashboard" element={<RequireAuthor><AuthorDashboardPage /></RequireAuthor>} />
+                    <Route path="/author/articles" element={<RequireAuthor><AuthorArticlesPage /></RequireAuthor>} />
+                    <Route path="/author/articles/create" element={<RequireAuthor><AuthorArticleFormPage /></RequireAuthor>} />
+                    <Route path="/author/articles/:id/edit" element={<RequireAuthor><AuthorArticleFormPage /></RequireAuthor>} />
+                    <Route path="/author/activities" element={<RequireAuthor><AuthorActivityPage /></RequireAuthor>} />
+                    <Route path="/author/feedback" element={<RequireAuthor><AuthorFeedbackPage /></RequireAuthor>} />
+                    <Route path="/author/settings" element={<RequireAuthor><AuthorSettingsPage /></RequireAuthor>} />
                     <Route path="/reader" element={<Navigate to="/reader/home" replace />} />
-                    <Route
-                        path="/reader/home"
-                        element={(
-                            <RequireReader>
-                                <ReaderHomePage />
-                            </RequireReader>
-                        )}
-                    />
-                    <Route
-                        path="/reader/articles/:identifier"
-                        element={(
-                            <RequireReader>
-                                <ReaderArticleDetailPage />
-                            </RequireReader>
-                        )}
-                    />
-                    <Route
-                        path="/reader/bookmarks"
-                        element={(
-                            <RequireReader>
-                                <ReaderBookmarksPage />
-                            </RequireReader>
-                        )}
-                    />
-                    <Route
-                        path="/reader/settings"
-                        element={(
-                            <RequireReader>
-                                <ReaderSettingsPage />
-                            </RequireReader>
-                        )}
-                    />
+                    <Route path="/reader/home" element={<RequireReader><ReaderHomePage /></RequireReader>} />
+                    <Route path="/reader/articles/:identifier" element={<RequireReader><ReaderArticleDetailPage /></RequireReader>} />
+                    <Route path="/reader/bookmarks" element={<RequireReader><ReaderBookmarksPage /></RequireReader>} />
+                    <Route path="/reader/settings" element={<RequireReader><ReaderSettingsPage /></RequireReader>} />
                     <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
             </Suspense>
