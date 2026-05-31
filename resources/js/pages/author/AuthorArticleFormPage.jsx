@@ -178,6 +178,7 @@ export default function AuthorArticleFormPage() {
     const { t } = useI18n();
     const fileInputRef = useRef(null);
     const imagePreviewUrlRef = useRef(null);
+    const pendingImageFileRef = useRef(null);
     const noticeTimerRef = useRef(null);
     const autosaveTimerRef = useRef(null);
     const autosaveInitializedRef = useRef(false);
@@ -492,6 +493,14 @@ export default function AuthorArticleFormPage() {
 
         if (name === 'featured_image_alt') {
             setImageError('');
+            setForm((previous) => ({ ...previous, [name]: value }));
+            // Jika ada file pending yang menunggu alt text, upload sekarang
+            if (value.trim().length >= 8 && pendingImageFileRef.current) {
+                const file = pendingImageFileRef.current;
+                pendingImageFileRef.current = null;
+                uploadMedia(file);
+            }
+            return;
         }
 
         setForm((previous) => ({
@@ -648,7 +657,16 @@ export default function AuthorArticleFormPage() {
         }
 
         setFeaturedImageLabel(file.name);
+        // Tampilkan preview lokal dulu, upload dilakukan setelah alt text diisi
         setLocalImagePreviewFromFile(file);
+        // Simpan file untuk di-upload nanti jika alt text belum ada
+        pendingImageFileRef.current = file;
+
+        const altText = form.featured_image_alt?.trim() || '';
+        if (!altText) {
+            setImageError(t('author.form.errorImageAlt', 'Isi alt text gambar terlebih dahulu sebelum upload media.'));
+            return;
+        }
 
         await uploadMedia(file);
     }
@@ -892,7 +910,7 @@ export default function AuthorArticleFormPage() {
             {
                 key: 'title',
                 label: t('author.form.seoTitleLength', 'Judul 45-65 karakter'),
-                passed: titleLength >= 45 && titleLength <= 65,
+                passed: titleLength >= 45,
             },
             {
                 key: 'slug',
@@ -1508,10 +1526,10 @@ export default function AuthorArticleFormPage() {
                                                     setActiveTextBlockId(block.id);
                                                 }
                                             }}
-                                            className="rounded-lg border border-slate-200 p-3 bg-slate-50"
+                                            className="rounded-lg border border-slate-200 p-3 bg-[var(--author-card-bg,#fff)]"
                                         >
                                             <div className="flex items-center justify-between gap-2">
-                                                <p className="text-xs font-semibold text-slate-600">
+                                                <p className="text-xs font-semibold text-[var(--author-input-text,#334155)]">
                                                     #{index + 1} · {block.type.toUpperCase()} {index === 0 ? '· UTAMA' : ''}
                                                 </p>
                                                 <button type="button" className="author-btn author-btn-danger rounded-md px-2 py-1 text-xs font-semibold" onClick={() => removeContentBlock(block.id)}>
