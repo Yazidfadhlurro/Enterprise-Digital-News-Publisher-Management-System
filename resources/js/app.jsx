@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useEffect } from 'react';
+import React, { Suspense, lazy, useEffect, useState } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { getToken, getUser, bootstrapSession } from './lib/auth';
 
@@ -111,10 +111,15 @@ function RequireReader({ children }) {
 }
 
 export default function App() {
+    const [ready, setReady] = useState(false);
+
     useEffect(() => {
-        // Verify session with server on app mount. Keeps client guards trustworthy.
-        void bootstrapSession();
+        bootstrapSession().finally(() => setReady(true));
     }, []);
+
+    if (!ready) {
+        return null;
+    }
 
     return (
         <div style={{ fontFamily: 'Sora, sans-serif' }}>
