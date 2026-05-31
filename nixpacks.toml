@@ -1,5 +1,5 @@
 [phases.setup]
-# cache-bust: 2
+# cache-bust: 3
 nixPkgs = ["php83", "php83Packages.composer", "php83Extensions.pdo", "php83Extensions.pdo_pgsql", "php83Extensions.pgsql", "php83Extensions.mbstring", "php83Extensions.xml", "php83Extensions.curl", "php83Extensions.zip", "php83Extensions.gd", "php83Extensions.tokenizer", "php83Extensions.fileinfo", "php83Extensions.dom", "php83Extensions.bcmath", "php83Extensions.openssl", "nodejs_20", "nodePackages.npm"]
 
 [phases.install]
@@ -13,6 +13,3 @@ cmds = [
     "npm run build",
     "mkdir -p storage/framework/views storage/framework/sessions storage/framework/cache/data storage/logs storage/app/public"
 ]
-
-[start]
-cmd = "php artisan config:clear && php artisan config:cache && php artisan migrate --force && php artisan storage:link && php artisan queue:work --daemon --tries=3 --timeout=90 & php artisan serve --host=0.0.0.0 --port=$PORT"
