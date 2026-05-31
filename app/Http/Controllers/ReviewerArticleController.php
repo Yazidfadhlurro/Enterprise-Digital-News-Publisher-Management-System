@@ -340,18 +340,19 @@ class ReviewerArticleController extends Controller
         }
 
         $checklist = $this->buildEditorialChecklist($article);
-        if (!($checklist['all_passed'] ?? false)) {
+        $note = ContentSanitizer::sanitizePlainText($request->input('review_notes'));
+        $note = $note === '' ? null : $note;
+
+        // Blokir hanya jika checklist belum passed DAN tidak ada catatan justifikasi dari editor
+        if (!($checklist['all_passed'] ?? false) && blank($note)) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Checklist editorial belum terpenuhi. Lengkapi item wajib sebelum publish.',
+                'message' => 'Checklist editorial belum terpenuhi. Isi catatan revisi sebagai justifikasi untuk tetap mempublikasikan.',
                 'data' => [
                     'review_checklist' => $checklist,
                 ],
             ], 422);
         }
-
-        $note = ContentSanitizer::sanitizePlainText($request->input('review_notes'));
-        $note = $note === '' ? null : $note;
         $now = now();
         $actor = $request->user();
         $actorId = $actor ? (int) $actor->id : null;

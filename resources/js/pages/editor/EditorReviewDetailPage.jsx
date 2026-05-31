@@ -107,8 +107,10 @@ export default function EditorReviewDetailPage() {
         }
 
         if (type === 'approve' && !checklistAllPassed) {
-            setError(t('editor.reviewDetail.checklistNotPassed', 'Checklist editorial belum lengkap. Lengkapi item wajib sebelum publish.'));
-            return;
+            if (!reviewNotes.trim()) {
+                setError(t('editor.reviewDetail.checklistNotPassed', 'Checklist editorial belum lengkap. Isi catatan revisi sebagai justifikasi sebelum mempublikasikan.'));
+                return;
+            }
         }
 
         const token = getToken();
@@ -231,10 +233,13 @@ export default function EditorReviewDetailPage() {
                             type="button"
                             className="portal-btn portal-btn-success mt-4 w-full"
                             onClick={() => submitDecision('approve')}
-                            disabled={submittingAction !== '' || !checklistAllPassed}
+                            disabled={submittingAction !== ''}
                         >
                             {submittingAction === 'approve' ? t('common.processing', 'Memproses...') : t('editor.reviewDetail.approvePublish', 'Setujui & Publikasikan')}
                         </button>
+                        {!checklistAllPassed && (
+                            <p className="mt-1 text-[11px] text-amber-600">Checklist belum lengkap — isi catatan revisi untuk tetap mempublikasikan.</p>
+                        )}
 
                         <button
                             type="button"
