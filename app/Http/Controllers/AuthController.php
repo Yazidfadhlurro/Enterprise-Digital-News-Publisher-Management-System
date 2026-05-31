@@ -204,21 +204,26 @@ class AuthController extends Controller
                 $minutes = (int) config('session.lifetime', 120);
                 $cookieName = config('session.cookie');
                 $sessionId = $request->session()->getId();
+                $domain = config('session.domain') ?: null;
+                $secure = (bool) config('session.secure');
+                $sameSite = config('session.same_site', 'lax');
 
-                Cookie::queue(Cookie::make($cookieName, $sessionId, $minutes));
+                Cookie::queue(Cookie::make($cookieName, $sessionId, $minutes, '/', $domain, $secure, true, false, $sameSite));
                 if (!empty($authScope) && $authScope === 'internal') {
-                    Cookie::queue(Cookie::make('internal_session', $sessionId, $minutes));
+                    Cookie::queue(Cookie::make('internal_session', $sessionId, $minutes, '/', $domain, $secure, true, false, $sameSite));
                 } else {
-                    Cookie::queue(Cookie::make('public_session', $sessionId, $minutes));
+                    Cookie::queue(Cookie::make('public_session', $sessionId, $minutes, '/', $domain, $secure, true, false, $sameSite));
                 }
                 Cookie::queue(Cookie::make(
                     'XSRF-TOKEN',
                     $request->session()->token(),
                     $minutes,
                     '/',
-                    config('session.domain'),
-                    (bool) config('session.secure'),
-                    false
+                    $domain,
+                    $secure,
+                    false,
+                    false,
+                    $sameSite
                 ));
             }
         } catch (\Throwable $e) {
@@ -348,18 +353,23 @@ class AuthController extends Controller
                 $minutes = (int) config('session.lifetime', 120);
                 $cookieName = config('session.cookie');
                 $sessionId = $request->session()->getId();
+                $domain = config('session.domain') ?: null;
+                $secure = (bool) config('session.secure');
+                $sameSite = config('session.same_site', 'lax');
 
-                Cookie::queue(Cookie::make($cookieName, $sessionId, $minutes));
+                Cookie::queue(Cookie::make($cookieName, $sessionId, $minutes, '/', $domain, $secure, true, false, $sameSite));
                 // registerInvite creates internal accounts only: set internal_session
-                Cookie::queue(Cookie::make('internal_session', $sessionId, $minutes));
+                Cookie::queue(Cookie::make('internal_session', $sessionId, $minutes, '/', $domain, $secure, true, false, $sameSite));
                 Cookie::queue(Cookie::make(
                     'XSRF-TOKEN',
                     $request->session()->token(),
                     $minutes,
                     '/',
-                    config('session.domain'),
-                    (bool) config('session.secure'),
-                    false
+                    $domain,
+                    $secure,
+                    false,
+                    false,
+                    $sameSite
                 ));
             }
         } catch (\Throwable $e) {

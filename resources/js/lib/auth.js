@@ -46,10 +46,15 @@ export async function bootstrapSession() {
             return true;
         }
 
-        clearAuth();
+        // Hanya clear jika tidak ada user tersimpan (bukan sekadar session expired sementara)
+        const existing = getUser();
+        if (!existing || !existing.id) {
+            clearAuth();
+        }
         return false;
     } catch (e) {
-        clearAuth();
+        // Jangan logout paksa saat network error atau 401 sementara
+        // Biarkan RequireAuth/RequireReader yang handle redirect
         return false;
     }
 }
