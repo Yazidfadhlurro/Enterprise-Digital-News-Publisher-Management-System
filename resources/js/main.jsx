@@ -19,6 +19,7 @@ class AppErrorBoundary extends React.Component {
 
     componentDidCatch(error) {
         console.error('App runtime error:', error);
+        this.setState({ errorMessage: error?.message || String(error) });
     }
 
     render() {
@@ -28,6 +29,9 @@ class AppErrorBoundary extends React.Component {
                     <div className="max-w-md w-full rounded-xl border border-slate-200 bg-white p-6 text-center shadow-sm">
                         <h1 className="text-xl font-semibold text-slate-900">Halaman gagal dimuat</h1>
                         <p className="mt-2 text-sm text-slate-600">Terjadi kesalahan runtime pada aplikasi. Silakan refresh halaman.</p>
+                        {this.state.errorMessage && (
+                            <p className="mt-2 text-xs text-red-500 font-mono break-all">{this.state.errorMessage}</p>
+                        )}
                         <button
                             type="button"
                             className="mt-4 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
