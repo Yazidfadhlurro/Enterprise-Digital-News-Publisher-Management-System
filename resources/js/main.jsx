@@ -51,16 +51,16 @@ class AppErrorBoundary extends React.Component {
 
 ReactDOM.createRoot(document.getElementById('app')).render(
     <React.StrictMode>
-        <AppErrorBoundary>
-            <I18nProvider>
-                <NotificationProvider>
-                    <ConfirmProvider>
-                        <BrowserRouter>
+        <I18nProvider>
+            <NotificationProvider>
+                <ConfirmProvider>
+                    <BrowserRouter>
+                        <AppErrorBoundary>
                             <App />
-                        </BrowserRouter>
-                    </ConfirmProvider>
-                </NotificationProvider>
-            </I18nProvider>
-        </AppErrorBoundary>
+                        </AppErrorBoundary>
+                    </BrowserRouter>
+                </ConfirmProvider>
+            </NotificationProvider>
+        </I18nProvider>
     </React.StrictMode>
 );
