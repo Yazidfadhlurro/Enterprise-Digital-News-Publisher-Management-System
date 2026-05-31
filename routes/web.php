@@ -2,156 +2,50 @@
 
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('spa');
-});
+$spa = function () {
+    return response(view('spa'))
+        ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
+        ->header('Pragma', 'no-cache')
+        ->header('Expires', '0');
+};
 
-Route::get('/register', function () {
-    return view('spa');
-});
-
-Route::get('/verify-email', function () {
-    return view('spa');
-});
-
-Route::get('/invite/{token}', function () {
-    return view('spa');
-});
-
-Route::get('/welcome', function () {
-    return view('spa');
-});
-
-Route::get('/internal/login', function () {
-    return view('spa');
-});
-
-Route::get('/forgot-password', function () {
-    return view('spa');
-});
-
-Route::get('/reset-password/{token}', function () {
-    return view('spa');
-});
-
-Route::get('/admin/dashboard', function () {
-    return view('spa');
-});
-
-Route::get('/admin/articles', function () {
-    return view('spa');
-});
-
-Route::get('/admin/categories', function () {
-    return view('spa');
-});
-
-Route::get('/admin/users', function () {
-    return view('spa');
-});
-
-Route::get('/admin/assignments', function () {
-    return view('spa');
-});
-
-Route::get('/admin/activities', function () {
-    return view('spa');
-});
-
-Route::get('/admin/feedback', function () {
-    return view('spa');
-});
-
-Route::get('/admin/permissions', function () {
-    return view('spa');
-});
-
-Route::get('/admin/settings', function () {
-    return view('spa');
-});
-
-Route::get('/editor', function () {
-    return view('spa');
-});
-
-Route::get('/editor/dashboard', function () {
-    return view('spa');
-});
-
-Route::get('/editor/review', function () {
-    return view('spa');
-});
-
-Route::get('/editor/review/{id}', function () {
-    return view('spa');
-});
-
-Route::get('/editor/published', function () {
-    return view('spa');
-});
-
-Route::get('/editor/activities', function () {
-    return view('spa');
-});
-
-Route::get('/editor/feedback', function () {
-    return view('spa');
-});
-
-Route::get('/editor/settings', function () {
-    return view('spa');
-});
-
-Route::get('/author', function () {
-    return view('spa');
-});
-
-Route::get('/author/dashboard', function () {
-    return view('spa');
-});
-
-Route::get('/author/articles', function () {
-    return view('spa');
-});
-
-Route::get('/author/articles/create', function () {
-    return view('spa');
-});
-
-Route::get('/author/articles/{id}/edit', function () {
-    return view('spa');
-});
-
-Route::get('/author/activities', function () {
-    return view('spa');
-});
-
-Route::get('/author/feedback', function () {
-    return view('spa');
-});
-
-Route::get('/author/settings', function () {
-    return view('spa');
-});
-
-Route::get('/reader', function () {
-    return view('spa');
-});
-
-Route::get('/reader/home', function () {
-    return view('spa');
-});
-
-Route::get('/reader/articles/{identifier}', function () {
-    return view('spa');
-});
-
-Route::get('/reader/bookmarks', function () {
-    return view('spa');
-});
-
-Route::get('/reader/settings', function () {
-    return view('spa');
-});
+Route::get('/', $spa);
+Route::get('/register', $spa);
+Route::get('/verify-email', $spa);
+Route::get('/invite/{token}', $spa);
+Route::get('/welcome', $spa);
+Route::get('/internal/login', $spa);
+Route::get('/forgot-password', $spa);
+Route::get('/reset-password/{token}', $spa);
+Route::get('/admin/dashboard', $spa);
+Route::get('/admin/articles', $spa);
+Route::get('/admin/categories', $spa);
+Route::get('/admin/users', $spa);
+Route::get('/admin/assignments', $spa);
+Route::get('/admin/activities', $spa);
+Route::get('/admin/feedback', $spa);
+Route::get('/admin/permissions', $spa);
+Route::get('/admin/settings', $spa);
+Route::get('/editor', $spa);
+Route::get('/editor/dashboard', $spa);
+Route::get('/editor/review', $spa);
+Route::get('/editor/review/{id}', $spa);
+Route::get('/editor/published', $spa);
+Route::get('/editor/activities', $spa);
+Route::get('/editor/feedback', $spa);
+Route::get('/editor/settings', $spa);
+Route::get('/author', $spa);
+Route::get('/author/dashboard', $spa);
+Route::get('/author/articles', $spa);
+Route::get('/author/articles/create', $spa);
+Route::get('/author/articles/{id}/edit', $spa);
+Route::get('/author/activities', $spa);
+Route::get('/author/feedback', $spa);
+Route::get('/author/settings', $spa);
+Route::get('/reader', $spa);
+Route::get('/reader/home', $spa);
+Route::get('/reader/articles/{identifier}', $spa);
+Route::get('/reader/bookmarks', $spa);
+Route::get('/reader/settings', $spa);
 
 

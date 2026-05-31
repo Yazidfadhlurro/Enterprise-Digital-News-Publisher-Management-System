@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useEffect, useState } from 'react';
+import React, { Suspense, lazy, useEffect } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { getToken, getUser, bootstrapSession } from './lib/auth';
 
@@ -111,16 +111,14 @@ function RequireReader({ children }) {
 }
 
 export default function App() {
-    const [ready, setReady] = useState(false);
-
     useEffect(() => {
-        bootstrapSession().finally(() => setReady(true));
+        void bootstrapSession();
     }, []);
 
     return (
         <div style={{ fontFamily: 'Sora, sans-serif' }}>
             <Suspense fallback={null}>
-                {ready && <Routes>
+                <Routes>
                     <Route path="/" element={<LoginPage />} />
                     <Route path="/internal/login" element={<InternalLoginPage />} />
                     <Route path="/forgot-password" element={<ForgotPasswordPage />} />
@@ -356,9 +354,8 @@ export default function App() {
                         )}
                     />
                     <Route path="*" element={<Navigate to="/" replace />} />
-                </Routes>}
+                </Routes>
             </Suspense>
-
         </div>
     );
 }
