@@ -19,8 +19,9 @@ class MediaUrl
 
         $normalized = ltrim(str_replace('\\', '/', $path), '/');
 
+        // Strip leading "storage/" prefix — Storage::disk('public')->url() adds it
         if (str_starts_with($normalized, 'storage/')) {
-            return '/'.$normalized;
+            $normalized = substr($normalized, strlen('storage/'));
         }
 
         return Storage::disk('public')->url($normalized);
