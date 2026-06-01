@@ -377,6 +377,26 @@ export default function AuthorArticleFormPage() {
         loadMediaLibrary();
     }, []);
 
+    // Reset semua state form dan media saat membuka form artikel baru
+    useEffect(() => {
+        if (!isEdit) {
+            setForm({ ...defaultForm });
+            setTags([]);
+            setTagInput('');
+            setSlugManual(false);
+            setLastAutosaveAt('');
+            setImageError('');
+            setCenterNotice('');
+            clearFeaturedImageSelection();
+            pendingImageFileRef.current = null;
+            const freshBlock = createContentBlock(CONTENT_BLOCK_TYPES.TEXT);
+            setContentBlocks([freshBlock]);
+            setActiveTextBlockId(freshBlock.id);
+            setSelectedMediaId(null);
+            autosaveInitializedRef.current = false;
+        }
+    }, [isEdit]);
+
     useEffect(() => {
         if (!isEdit) {
             return;
@@ -891,6 +911,23 @@ export default function AuthorArticleFormPage() {
             if (payload?.status !== 'success') {
                 throw new Error(payload?.message || t('author.form.errorSave', 'Gagal menyimpan berita.'));
             }
+
+            // Reset semua state form dan media agar form baru benar-benar bersih
+            setForm({ ...defaultForm });
+            setTags([]);
+            setTagInput('');
+            setSlugManual(false);
+            setLastAutosaveAt('');
+            setImageError('');
+            setCenterNotice('');
+            clearFeaturedImageSelection();
+            pendingImageFileRef.current = null;
+            const freshBlock = createContentBlock(CONTENT_BLOCK_TYPES.TEXT);
+            setContentBlocks([freshBlock]);
+            setActiveTextBlockId(freshBlock.id);
+            setMediaItems([]);
+            setSelectedMediaId(null);
+            autosaveInitializedRef.current = false;
 
             navigate('/author/articles', { replace: true });
         } catch (err) {
