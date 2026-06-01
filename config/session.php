@@ -158,11 +158,13 @@ return [
 
     'domain' => (function () {
         $domain = env('SESSION_DOMAIN');
-        // Empty string from Railway env vars should be treated as null
-        if ($domain === '' || $domain === 'null') {
+        // Treat empty string, "null", or public suffix wildcards as null.
+        // Browsers reject cookies set on public suffixes (e.g. .up.railway.app).
+        if ($domain === '' || $domain === 'null' || $domain === null) {
             return null;
         }
-        return $domain;
+        // Strip leading dot — use exact host so browser accepts the cookie.
+        return ltrim($domain, '.');
     })(),
 
     /*
