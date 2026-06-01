@@ -35,7 +35,7 @@ class SecurityHeaders
     {
         $directives = [
             "default-src 'self'",
-            "img-src 'self' data: https:",
+            "img-src 'self' data: blob: https:",
             "style-src 'self' 'unsafe-inline'",
             "script-src 'self' 'unsafe-inline'",
             "script-src-attr 'unsafe-inline'",
@@ -45,7 +45,6 @@ class SecurityHeaders
             "base-uri 'self'",
             "form-action 'self'",
             "frame-ancestors 'none'",
-            "upgrade-insecure-requests",
             "block-all-mixed-content",
         ];
 
