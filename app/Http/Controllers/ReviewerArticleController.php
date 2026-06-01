@@ -505,10 +505,12 @@ class ReviewerArticleController extends Controller
 
     private function mapArticleDetail(object $article): array
     {
+        $featuredImage = trim((string) ($article->featured_image ?? ''));
         return [
             ...$this->mapArticleSummary($article),
             'content' => $article->content,
-            'featured_image' => $article->featured_image,
+            'featured_image' => $featuredImage,
+            'featured_image_url' => $featuredImage ? \App\Support\MediaUrl::resolve($featuredImage) : null,
             'featured_image_alt' => $article->featured_image_alt ?? null,
             'review_notes' => $article->review_notes,
         ];
