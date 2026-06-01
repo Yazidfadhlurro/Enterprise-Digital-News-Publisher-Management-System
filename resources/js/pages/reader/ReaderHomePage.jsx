@@ -395,7 +395,7 @@ export default function ReaderHomePage() {
     const footerCategories = useMemo(() => categoryOptions.slice(0, 4), [categoryOptions]);
 
     return (
-        <ReaderShell shellClassName="reader-shell-news-portal reader-shell-news-portal-home">
+        <ReaderShell shellClassName="reader-shell-news-portal reader-shell-news-portal-home" footerCategories={footerCategories}>
             <div className="reader-home-portal">
                 <section className="reader-home-portal-top-nav rounded-lg border border-slate-200 bg-white px-3 py-2.5 shadow-sm">
                     <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_240px] gap-2 items-center">

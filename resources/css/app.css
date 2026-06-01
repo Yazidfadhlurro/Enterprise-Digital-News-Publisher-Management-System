@@ -3466,3 +3466,292 @@ body {
     }
 }
 
+
+/* ============================================================
+   DARK MODE & READ MODE — comprehensive overrides
+   ============================================================ */
+
+/* --- Reader shell: bg-white / bg-slate-* panels --- */
+.reader-shell.ui-mode-night .bg-white,
+.reader-shell.ui-mode-night .bg-slate-50,
+.reader-shell.ui-mode-night .bg-slate-100 {
+    background-color: var(--reader-panel) !important;
+}
+.reader-shell.ui-mode-night .border-slate-200,
+.reader-shell.ui-mode-night .border-slate-300 {
+    border-color: var(--reader-border) !important;
+}
+
+/* --- Reader text colors in dark mode --- */
+.reader-shell.ui-mode-night .text-slate-900,
+.reader-shell.ui-mode-night .text-slate-800 {
+    color: var(--reader-tone-900) !important;
+}
+.reader-shell.ui-mode-night .text-slate-700,
+.reader-shell.ui-mode-night .text-slate-600 {
+    color: var(--reader-tone-700) !important;
+}
+.reader-shell.ui-mode-night .text-slate-500,
+.reader-shell.ui-mode-night .text-slate-400 {
+    color: var(--reader-tone-500) !important;
+}
+
+/* --- Reader portal cards in dark mode --- */
+.reader-shell.ui-mode-night .reader-portal-news-card,
+.reader-shell.ui-mode-night .reader-home-portal-trending,
+.reader-shell.ui-mode-night .reader-detail-article,
+.reader-shell.ui-mode-night .reader-detail-panel,
+.reader-shell.ui-mode-night .reader-comment-card,
+.reader-shell.ui-mode-night .reader-related-card,
+.reader-shell.ui-mode-night .reader-home-portal-top-nav {
+    background-color: var(--reader-panel) !important;
+    border-color: var(--reader-border) !important;
+}
+.reader-shell.ui-mode-night .reader-comment-card {
+    background-color: var(--reader-surface-soft) !important;
+}
+
+/* --- Textarea / input in dark mode --- */
+.reader-shell.ui-mode-night textarea,
+.reader-shell.ui-mode-night input[type="text"],
+.reader-shell.ui-mode-night input[type="email"],
+.reader-shell.ui-mode-night input[type="password"] {
+    background-color: var(--reader-surface-soft) !important;
+    border-color: var(--reader-border) !important;
+    color: var(--reader-tone-900) !important;
+}
+.reader-shell.ui-mode-night textarea::placeholder,
+.reader-shell.ui-mode-night input::placeholder {
+    color: var(--reader-tone-500) !important;
+}
+
+/* --- Star buttons in dark mode --- */
+.reader-shell.ui-mode-night .reader-star-btn {
+    background-color: var(--reader-surface-soft) !important;
+    border-color: var(--reader-border) !important;
+    color: var(--reader-tone-500) !important;
+}
+.reader-shell.ui-mode-night .reader-star-btn.is-active {
+    background-color: var(--reader-gold-soft) !important;
+    border-color: var(--reader-gold) !important;
+    color: var(--reader-gold) !important;
+}
+
+/* --- Detail action button (bookmark) in dark mode --- */
+.reader-shell.ui-mode-night .reader-detail-action {
+    background-color: var(--reader-surface-soft) !important;
+    border-color: var(--reader-border) !important;
+    color: var(--reader-tone-800) !important;
+}
+.reader-shell.ui-mode-night .reader-detail-action.is-active {
+    background-color: var(--reader-gold-soft) !important;
+    border-color: var(--reader-gold) !important;
+    color: var(--reader-gold) !important;
+}
+
+/* --- Pagination in dark mode --- */
+.reader-shell.ui-mode-night .reader-pagination-btn {
+    background-color: var(--reader-panel) !important;
+    border-color: var(--reader-border) !important;
+    color: var(--reader-tone-800) !important;
+}
+
+/* --- Profile menu in dark mode --- */
+.reader-shell.ui-mode-night .reader-profile-menu {
+    background-color: var(--reader-panel) !important;
+    border-color: var(--reader-border) !important;
+}
+.reader-shell.ui-mode-night .reader-profile-menu-item {
+    color: var(--reader-tone-800) !important;
+}
+.reader-shell.ui-mode-night .reader-profile-menu-item:hover {
+    background-color: var(--reader-surface-soft) !important;
+}
+
+/* --- Mode toggle button in dark mode --- */
+.reader-shell.ui-mode-night .reader-mode-toggle {
+    background-color: var(--reader-toggle-bg) !important;
+    border-color: var(--reader-border) !important;
+    color: var(--reader-toggle-text) !important;
+}
+
+/* --- Avatar button in dark mode --- */
+.reader-shell.ui-mode-night .reader-avatar-button {
+    background-color: var(--reader-surface-soft) !important;
+    color: var(--reader-tone-800) !important;
+    ring-color: var(--reader-border) !important;
+}
+
+/* --- Topic nav in dark mode --- */
+.reader-shell.ui-mode-night .reader-home-portal-topic-link {
+    color: var(--reader-tone-600) !important;
+}
+.reader-shell.ui-mode-night .reader-home-portal-topic-link.is-active,
+.reader-shell.ui-mode-night .reader-home-portal-topic-link:hover {
+    color: var(--reader-accent) !important;
+    background-color: var(--reader-accent-soft) !important;
+}
+
+/* --- Search input in dark mode --- */
+.reader-shell.ui-mode-night .reader-home-portal-search-input {
+    background-color: var(--reader-surface-soft) !important;
+    color: var(--reader-tone-900) !important;
+    border-color: var(--reader-border) !important;
+}
+.reader-shell.ui-mode-night .reader-home-portal-search-icon {
+    color: var(--reader-tone-500) !important;
+}
+
+/* --- Sidebar popular / trending items in dark mode --- */
+.reader-shell.ui-mode-night .reader-portal-popular-item,
+.reader-shell.ui-mode-night .reader-home-portal-trending-item {
+    color: var(--reader-tone-800) !important;
+}
+.reader-shell.ui-mode-night .reader-home-portal-trending-rank,
+.reader-shell.ui-mode-night .reader-portal-popular-rank {
+    background-color: var(--reader-accent-soft) !important;
+    color: var(--reader-accent) !important;
+}
+
+/* --- Category chips in dark mode --- */
+.reader-shell.ui-mode-night .reader-home-portal-category-chip {
+    background-color: var(--reader-surface-soft) !important;
+    border-color: var(--reader-border) !important;
+    color: var(--reader-tone-700) !important;
+}
+.reader-shell.ui-mode-night .reader-home-portal-category-chip.is-active {
+    background-color: var(--reader-accent) !important;
+    color: #fff !important;
+}
+
+/* --- Tag pills in dark mode --- */
+.reader-shell.ui-mode-night .reader-tag-pill {
+    background-color: var(--reader-surface-soft) !important;
+    border-color: var(--reader-border) !important;
+    color: var(--reader-tone-700) !important;
+}
+
+/* --- Read mode text overrides (same pattern) --- */
+.reader-shell.ui-mode-read .text-slate-900,
+.reader-shell.ui-mode-read .text-slate-800 {
+    color: var(--reader-tone-900) !important;
+}
+.reader-shell.ui-mode-read .text-slate-700,
+.reader-shell.ui-mode-read .text-slate-600 {
+    color: var(--reader-tone-700) !important;
+}
+.reader-shell.ui-mode-read .text-slate-500,
+.reader-shell.ui-mode-read .text-slate-400 {
+    color: var(--reader-tone-500) !important;
+}
+.reader-shell.ui-mode-read .bg-white,
+.reader-shell.ui-mode-read .bg-slate-50,
+.reader-shell.ui-mode-read .bg-slate-100 {
+    background-color: var(--reader-panel) !important;
+}
+.reader-shell.ui-mode-read .border-slate-200,
+.reader-shell.ui-mode-read .border-slate-300 {
+    border-color: var(--reader-border) !important;
+}
+.reader-shell.ui-mode-read textarea,
+.reader-shell.ui-mode-read input[type="text"] {
+    background-color: var(--reader-surface-soft) !important;
+    border-color: var(--reader-border) !important;
+    color: var(--reader-tone-900) !important;
+}
+
+/* ============================================================
+   LAYOUT FIXES — article cards & published articles
+   ============================================================ */
+
+/* Prevent text overflow in cards */
+.reader-portal-news-card .reader-display {
+    word-break: break-word;
+    overflow-wrap: break-word;
+}
+
+/* Fix article detail layout overflow */
+.reader-detail-article h2,
+.reader-detail-article p {
+    word-break: break-word;
+    overflow-wrap: break-word;
+}
+
+/* Fix review detail content overflow */
+.editor-review-content img {
+    max-width: 100%;
+    height: auto;
+}
+.editor-review-content {
+    word-break: break-word;
+    overflow-wrap: break-word;
+}
+
+/* Fix backoffice dark mode text visibility */
+.admin-shell.ui-mode-night .text-slate-900,
+.admin-shell.ui-mode-night .text-slate-800 {
+    color: #e2ebf7 !important;
+}
+.admin-shell.ui-mode-night .text-slate-700,
+.admin-shell.ui-mode-night .text-slate-600 {
+    color: #b8c7de !important;
+}
+.admin-shell.ui-mode-night .text-slate-500,
+.admin-shell.ui-mode-night .text-slate-400 {
+    color: #8ba0bd !important;
+}
+.admin-shell.ui-mode-night .bg-white {
+    background-color: #111b2d !important;
+}
+.admin-shell.ui-mode-night .bg-slate-50,
+.admin-shell.ui-mode-night .bg-slate-100 {
+    background-color: #0e1829 !important;
+}
+.admin-shell.ui-mode-night .border-slate-200,
+.admin-shell.ui-mode-night .border-slate-300 {
+    border-color: #263549 !important;
+}
+.admin-shell.ui-mode-night textarea,
+.admin-shell.ui-mode-night input[type="text"],
+.admin-shell.ui-mode-night input[type="email"],
+.admin-shell.ui-mode-night input[type="password"],
+.admin-shell.ui-mode-night select {
+    background-color: #1a263b !important;
+    border-color: #263549 !important;
+    color: #e2ebf7 !important;
+}
+
+/* ============================================================
+   MOBILE RESPONSIVE FIXES
+   ============================================================ */
+@media (max-width: 640px) {
+    /* Reader detail layout: stack on mobile */
+    .reader-detail-layout {
+        grid-template-columns: 1fr !important;
+    }
+    .reader-detail-aside {
+        position: static !important;
+    }
+
+    /* Editor review detail: stack on mobile */
+    .editor-review-detail-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Fix hero overlay text on small screens */
+    .reader-home-portal-hero-overlay h2 {
+        font-size: 1.4rem !important;
+        line-height: 1.2 !important;
+    }
+
+    /* Fix article card grid on mobile */
+    .reader-portal-news-card {
+        width: 100% !important;
+    }
+
+    /* Backoffice sidebar on mobile */
+    .admin-shell .admin-sidebar {
+        position: fixed !important;
+        z-index: 50 !important;
+    }
+}

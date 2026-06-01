@@ -100,6 +100,7 @@ export default function ReaderShell({
     children,
     shellClassName = '',
     hideFooter = false,
+    footerCategories = [],
 }) {
     const navigate = useNavigate();
     const user = getUser();
@@ -398,10 +399,16 @@ export default function ReaderShell({
                                         <div>
                                             <h5 className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-300">{t('reader.home.categories', 'Kategori')}</h5>
                                             <ul className="mt-2 space-y-1.5 text-xs text-slate-200">
-                                                <li>{t('reader.category.technology', 'Teknologi')}</li>
-                                                <li>{t('reader.category.politics', 'Politik')}</li>
-                                                <li>{t('reader.category.economy', 'Ekonomi')}</li>
-                                                <li>{t('reader.category.sports', 'Olahraga')}</li>
+                                                {footerCategories.length ? footerCategories.map((cat) => (
+                                                    <li key={cat.id}>{cat.name}</li>
+                                                )) : (
+                                                    <>
+                                                        <li>{t('reader.category.technology', 'Teknologi')}</li>
+                                                        <li>{t('reader.category.politics', 'Politik')}</li>
+                                                        <li>{t('reader.category.economy', 'Ekonomi')}</li>
+                                                        <li>{t('reader.category.sports', 'Olahraga')}</li>
+                                                    </>
+                                                )}
                                             </ul>
                                         </div>
 

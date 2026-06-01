@@ -89,7 +89,7 @@ export default function EditorReviewDetailPage() {
         loadDetail();
     }, [id]);
 
-    const articleImageUrl = resolveImageUrl(article?.featured_image);
+    const articleImageUrl = resolveImageUrl(article?.featured_image_url || article?.featured_image);
     const normalizedContent = useMemo(() => normalizeRichText(article?.content), [article?.content]);
     const sanitizedContent = useMemo(() => sanitizeHtml(normalizedContent), [normalizedContent]);
     const contentText = useMemo(() => stripHtml(normalizedContent), [normalizedContent]);
