@@ -53,6 +53,7 @@ export default function ReaderArticleDetailPage() {
     const [comments, setComments] = useState([]);
     const [ratingValue, setRatingValue] = useState(0);
     const [commentInput, setCommentInput] = useState('');
+    const [footerCategories, setFooterCategories] = useState([]);
 
     useErrorNotification(error, setError);
 
@@ -72,6 +73,15 @@ export default function ReaderArticleDetailPage() {
             setArticle(detailArticle);
             setRelatedArticles(payload?.data?.related_articles || []);
             setRatingValue(Number(detailArticle?.current_user_rating || 0));
+
+            // Fetch categories for footer
+            try {
+                const catPayload = await apiRequest('/user/articles?per_page=1', { token });
+                const cats = catPayload?.data?.filters?.category_options || [];
+                setFooterCategories(cats.slice(0, 4));
+            } catch (_) {
+                // non-critical, ignore
+            }
         } catch (err) {
             setError(err.message || t('reader.detail.errorLoadDefault', 'Terjadi kesalahan saat memuat detail berita.'));
         } finally {
@@ -240,6 +250,7 @@ export default function ReaderArticleDetailPage() {
     return (
         <ReaderShell
             shellClassName="reader-shell-news-portal reader-shell-news-portal-article"
+            footerCategories={footerCategories}
         >
             {loading ? (
                 <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm text-sm text-slate-500">
@@ -249,7 +260,7 @@ export default function ReaderArticleDetailPage() {
                 <div className="reader-detail-layout grid grid-cols-1 gap-4 items-start xl:grid-cols-[minmax(0,820px)_320px] xl:justify-center">
                     <article className="reader-detail-article rounded-2xl border border-slate-200 bg-white shadow-sm">
                         <p className="reader-eyebrow text-xs uppercase tracking-[0.12em] text-blue-700 font-semibold">{article.category_name || '-'}</p>
-                        <h2 className="reader-detail-title reader-display mt-2 text-3xl md:text-5xl leading-[1.05] font-semibold text-slate-900">{article.title}</h2>
+                        <h2 className="reader-detail-title reader-display mt-2 text-3xl md:text-5xl leading-[1.05] font-semibold text-slate-900 break-all">{article.title}</h2>
                         <p className="reader-detail-excerpt mt-3 text-slate-600">{article.excerpt || t('reader.detail.noExcerpt', 'Ringkasan belum tersedia.')}</p>
 
                         <div className="reader-detail-meta mt-4 flex flex-wrap items-center gap-2 text-xs text-slate-600">

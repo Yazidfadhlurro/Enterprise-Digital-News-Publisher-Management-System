@@ -5,6 +5,7 @@ import { apiRequest } from '../../lib/api';
 import { getToken } from '../../lib/auth';
 import { normalizeRichText, sanitizeHtml, stripHtml } from '../../lib/html';
 import { useI18n } from '../../lib/i18n';
+import { articleImageUrl } from '../../lib/media';
 import { useErrorNotification } from '../../lib/notify';
 
 const REVIEW_NOTES_LIMIT = 500;
@@ -29,20 +30,6 @@ function dynamicKey(prefix, value) {
     }
 
     return `${prefix}.${encodeURIComponent(text).slice(0, 140)}`;
-}
-
-function resolveImageUrl(value) {
-    if (!value) return '';
-
-    if (/^https?:\/\//i.test(value) || value.startsWith('data:') || value.startsWith('/')) {
-        return value;
-    }
-
-    if (value.startsWith('storage/')) {
-        return `/${value}`;
-    }
-
-    return `/storage/${value.replace(/^\/+/, '')}`;
 }
 
 export default function EditorReviewDetailPage() {
@@ -89,7 +76,8 @@ export default function EditorReviewDetailPage() {
         loadDetail();
     }, [id]);
 
-    const articleImageUrl = resolveImageUrl(article?.featured_image_url || article?.featured_image);
+    const articleImageSrc = articleImageUrl(article);
+    const isReviewable = article?.status === 'pending';
     const normalizedContent = useMemo(() => normalizeRichText(article?.content), [article?.content]);
     const sanitizedContent = useMemo(() => sanitizeHtml(normalizedContent), [normalizedContent]);
     const contentText = useMemo(() => stripHtml(normalizedContent), [normalizedContent]);
@@ -148,15 +136,15 @@ export default function EditorReviewDetailPage() {
                     {t('editor.reviewDetail.loading', 'Memuat detail berita review...')}
                 </section>
             ) : article ? (
-                <section className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_290px] gap-4 items-start">
-                    <article className="rounded-xl border border-slate-200 bg-white p-5 md:p-6 shadow-sm">
-                        <h2 className="text-[34px] md:text-[42px] leading-[1.08] font-semibold text-slate-900">{t(dynamicKey('editor.reviewDetail.articleTitle', article.title), article.title)}</h2>
-                        <p className="mt-4 text-[18px] leading-8 text-slate-600">{article.excerpt ? t(dynamicKey('editor.reviewDetail.articleExcerpt', article.excerpt), article.excerpt) : t('editor.reviewDetail.noSummary', 'Tidak ada ringkasan berita.')}</p>
+                <section className="editor-review-detail-grid grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_290px] gap-4 items-start min-w-0">
+                    <article className="rounded-xl border border-slate-200 bg-white p-5 md:p-6 shadow-sm min-w-0" style={{wordBreak:'break-all',overflowWrap:'anywhere'}}>
+                        <h2 className="text-xl md:text-2xl leading-snug font-semibold text-slate-900">{t(dynamicKey('editor.reviewDetail.articleTitle', article.title), article.title)}</h2>
+                        <p className="mt-3 text-sm leading-6 text-slate-600">{article.excerpt ? t(dynamicKey('editor.reviewDetail.articleExcerpt', article.excerpt), article.excerpt) : t('editor.reviewDetail.noSummary', 'Tidak ada ringkasan berita.')}</p>
 
                         <div className="mt-5 rounded-xl border border-slate-200 overflow-hidden bg-slate-100">
-                            {articleImageUrl && !imageFailed ? (
+                            {articleImageSrc && !imageFailed ? (
                                 <img
-                                    src={articleImageUrl}
+                                    src={articleImageSrc}
                                     alt={t(dynamicKey('editor.reviewDetail.articleAlt', article.title), article.title)}
                                     className="w-full h-[360px] object-cover"
                                     onError={() => setImageFailed(true)}
@@ -173,7 +161,7 @@ export default function EditorReviewDetailPage() {
                             )}
                         </div>
 
-                        <div className="editor-review-content mt-5 text-[16px] leading-8 text-slate-700">
+                        <div className="editor-review-content mt-5 text-[16px] leading-8 text-slate-700 break-words overflow-hidden">
                             {hasContent ? (
                                 <div dangerouslySetInnerHTML={{ __html: sanitizedContent }} />
                             ) : (
@@ -234,11 +222,12 @@ export default function EditorReviewDetailPage() {
                             type="button"
                             className="portal-btn portal-btn-success mt-4 w-full"
                             onClick={() => submitDecision('approve')}
-                            disabled={submittingAction !== ''}
+                            disabled={submittingAction !== '' || !isReviewable}
+                            style={!isReviewable ? {display:'none'} : {}}
                         >
                             {submittingAction === 'approve' ? t('common.processing', 'Memproses...') : t('editor.reviewDetail.approvePublish', 'Setujui & Publikasikan')}
                         </button>
-                        {!checklistAllPassed && (
+                        {!checklistAllPassed && isReviewable && (
                             <p className="mt-1 text-[11px] text-amber-600">Checklist belum lengkap — isi catatan jika ingin tetap mempublikasikan.</p>
                         )}
 
@@ -246,12 +235,20 @@ export default function EditorReviewDetailPage() {
                             type="button"
                             className="portal-btn portal-btn-danger mt-2 w-full"
                             onClick={() => submitDecision('reject')}
-                            disabled={submittingAction !== ''}
+                            disabled={submittingAction !== '' || !isReviewable}
+                            style={!isReviewable ? {display:'none'} : {}}
                         >
                             {submittingAction === 'reject' ? t('common.processing', 'Memproses...') : t('editor.reviewDetail.returnToAuthor', 'Kembalikan ke Penulis')}
                         </button>
-                        <p className="mt-1 text-[11px] text-slate-400">Catatan revisi wajib diisi saat mengembalikan ke penulis.</p>
+                        {isReviewable && <p className="mt-1 text-[11px] text-slate-400">Catatan revisi wajib diisi saat mengembalikan ke penulis.</p>}
 
+                        {!isReviewable && (
+                            <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-sm font-semibold text-emerald-700">
+                                ✓ Berita ini sudah dipublikasikan.
+                            </div>
+                        )}
+
+                        {isReviewable && (
                         <div className="mt-4">
                             <label htmlFor="review_notes" className="block text-sm font-semibold text-slate-700 mb-1">{t('editor.reviewDetail.revisionNotes', 'Catatan Revisi')}</label>
                             <textarea
@@ -265,6 +262,7 @@ export default function EditorReviewDetailPage() {
                             />
                             <p className="mt-2 text-xs text-slate-400">{t('editor.reviewDetail.characterCount', '{count} / {max} karakter', { count: reviewNotes.length, max: REVIEW_NOTES_LIMIT })}</p>
                         </div>
+                        )}
                     </aside>
                 </section>
             ) : (

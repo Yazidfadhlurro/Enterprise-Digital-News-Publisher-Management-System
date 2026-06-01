@@ -70,7 +70,7 @@ export default function EditorPublishedPage() {
 
             <section className="mt-4 rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
+                    <table className="editor-published-table w-full text-sm">
                         <thead>
                             <tr className="text-left text-[11px] uppercase tracking-wide text-slate-500 border-y border-slate-200 bg-slate-50">
                                 <th className="py-2.5 px-3">{t('table.title', 'Judul')}</th>
@@ -86,11 +86,16 @@ export default function EditorPublishedPage() {
                                 </tr>
                             ) : articles.length ? (
                                 articles.map((article) => (
-                                    <tr key={article.id}>
-                                        <td className="py-3 px-3 text-slate-800 font-medium">{t(dynamicKey('editor.published.titleText', article.title), article.title)}</td>
-                                        <td className="py-3 px-3 text-slate-600">{t(dynamicKey('editor.published.authorText', article.author_name), article.author_name)}</td>
+                                    <tr key={article.id} className="hover:bg-slate-50 transition-colors">
+                                        <td className="py-3 px-3 text-slate-800 font-medium">
+                                            <p className="line-clamp-2 leading-snug">{t(dynamicKey('editor.published.titleText', article.title), article.title)}</p>
+                                            {article.category_name ? (
+                                                <span className="mt-1 inline-block text-[10px] font-semibold uppercase tracking-wide text-blue-600 bg-blue-50 rounded px-1.5 py-0.5">{article.category_name}</span>
+                                            ) : null}
+                                        </td>
+                                        <td className="py-3 px-3 text-slate-600 whitespace-nowrap">{t(dynamicKey('editor.published.authorText', article.author_name), article.author_name)}</td>
                                         <td className="py-3 px-3 text-slate-600">{t(dynamicKey('editor.published.categoryText', article.category_name), article.category_name)}</td>
-                                        <td className="py-3 px-3 text-slate-500">{formatDate(article.published_at || article.date, intlLocale)}</td>
+                                        <td className="py-3 px-3 text-slate-500 whitespace-nowrap">{formatDate(article.published_at || article.date, intlLocale)}</td>
                                     </tr>
                                 ))
                             ) : (

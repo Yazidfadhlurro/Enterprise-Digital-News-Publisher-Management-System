@@ -3755,3 +3755,553 @@ body {
         z-index: 50 !important;
     }
 }
+
+
+/* ============================================================
+   BUG FIXES: DARK MODE — editor/author/backoffice shells
+   ============================================================ */
+
+/* Editor shell dark mode text */
+.editor-shell.ui-mode-night .text-slate-900,
+.editor-shell.ui-mode-night .text-slate-800 {
+    color: #e2ebf7 !important;
+}
+.editor-shell.ui-mode-night .text-slate-700,
+.editor-shell.ui-mode-night .text-slate-600 {
+    color: #b8c7de !important;
+}
+.editor-shell.ui-mode-night .text-slate-500,
+.editor-shell.ui-mode-night .text-slate-400 {
+    color: #8ba0bd !important;
+}
+.editor-shell.ui-mode-night .bg-white {
+    background-color: #111b2d !important;
+}
+.editor-shell.ui-mode-night .bg-slate-50,
+.editor-shell.ui-mode-night .bg-slate-100 {
+    background-color: #0e1829 !important;
+}
+.editor-shell.ui-mode-night .border-slate-200,
+.editor-shell.ui-mode-night .border-slate-100 {
+    border-color: #263549 !important;
+}
+.editor-shell.ui-mode-night textarea,
+.editor-shell.ui-mode-night input[type="text"],
+.editor-shell.ui-mode-night input[type="email"],
+.editor-shell.ui-mode-night input[type="password"],
+.editor-shell.ui-mode-night select {
+    background-color: #1a263b !important;
+    border-color: #263549 !important;
+    color: #e2ebf7 !important;
+}
+.editor-shell.ui-mode-night textarea::placeholder,
+.editor-shell.ui-mode-night input::placeholder {
+    color: #7f93ae !important;
+}
+
+/* Author shell dark mode text */
+.author-shell.ui-mode-night .text-slate-900,
+.author-shell.ui-mode-night .text-slate-800 {
+    color: #e2ebf7 !important;
+}
+.author-shell.ui-mode-night .text-slate-700,
+.author-shell.ui-mode-night .text-slate-600 {
+    color: #b8c7de !important;
+}
+.author-shell.ui-mode-night .text-slate-500,
+.author-shell.ui-mode-night .text-slate-400 {
+    color: #8ba0bd !important;
+}
+.author-shell.ui-mode-night .bg-white {
+    background-color: #111b2d !important;
+}
+.author-shell.ui-mode-night .bg-slate-50,
+.author-shell.ui-mode-night .bg-slate-100 {
+    background-color: #0e1829 !important;
+}
+.author-shell.ui-mode-night .border-slate-200,
+.author-shell.ui-mode-night .border-slate-100 {
+    border-color: #263549 !important;
+}
+
+/* Read mode text for editor/author */
+.editor-shell.ui-mode-read .text-slate-900,
+.editor-shell.ui-mode-read .text-slate-800,
+.author-shell.ui-mode-read .text-slate-900,
+.author-shell.ui-mode-read .text-slate-800 {
+    color: #3f3224 !important;
+}
+.editor-shell.ui-mode-read .text-slate-700,
+.editor-shell.ui-mode-read .text-slate-600,
+.author-shell.ui-mode-read .text-slate-700,
+.author-shell.ui-mode-read .text-slate-600 {
+    color: #685645 !important;
+}
+.editor-shell.ui-mode-read .text-slate-500,
+.editor-shell.ui-mode-read .text-slate-400,
+.author-shell.ui-mode-read .text-slate-500,
+.author-shell.ui-mode-read .text-slate-400 {
+    color: #8f7a64 !important;
+}
+.editor-shell.ui-mode-read .bg-white,
+.author-shell.ui-mode-read .bg-white {
+    background-color: #fffaf0 !important;
+}
+.editor-shell.ui-mode-read .bg-slate-50,
+.editor-shell.ui-mode-read .bg-slate-100,
+.author-shell.ui-mode-read .bg-slate-50,
+.author-shell.ui-mode-read .bg-slate-100 {
+    background-color: #fbf3e4 !important;
+}
+.editor-shell.ui-mode-read .border-slate-200,
+.author-shell.ui-mode-read .border-slate-200 {
+    border-color: #e6d8bd !important;
+}
+
+/* Fix amber/rose/emerald text in dark mode (status badges) */
+.admin-shell.ui-mode-night .text-amber-600,
+.editor-shell.ui-mode-night .text-amber-600 {
+    color: #fbbf24 !important;
+}
+.admin-shell.ui-mode-night .text-rose-700,
+.editor-shell.ui-mode-night .text-rose-700 {
+    color: #fca5a5 !important;
+}
+.admin-shell.ui-mode-night .text-emerald-700,
+.editor-shell.ui-mode-night .text-emerald-700 {
+    color: #6ee7b7 !important;
+}
+
+/* Fix divide color in dark mode tables */
+.admin-shell.ui-mode-night .divide-slate-100 > * + *,
+.editor-shell.ui-mode-night .divide-slate-100 > * + * {
+    border-color: #1e2f45 !important;
+}
+
+/* ============================================================
+   BUG FIXES: LAYOUT BERITA TERBIT (Published Articles)
+   ============================================================ */
+
+/* Published articles table: proper column widths */
+.editor-shell .editor-published-table {
+    table-layout: fixed;
+    width: 100%;
+}
+.editor-shell .editor-published-table th:nth-child(1),
+.editor-shell .editor-published-table td:nth-child(1) {
+    width: 40%;
+    word-break: break-word;
+    overflow-wrap: break-word;
+}
+.editor-shell .editor-published-table th:nth-child(2),
+.editor-shell .editor-published-table td:nth-child(2) {
+    width: 20%;
+}
+.editor-shell .editor-published-table th:nth-child(3),
+.editor-shell .editor-published-table td:nth-child(3) {
+    width: 20%;
+}
+.editor-shell .editor-published-table th:nth-child(4),
+.editor-shell .editor-published-table td:nth-child(4) {
+    width: 20%;
+    white-space: nowrap;
+}
+
+/* Fix table overflow on all backoffice pages */
+.admin-shell table,
+.editor-shell table,
+.author-shell table {
+    min-width: 0;
+}
+.admin-shell .overflow-x-auto,
+.editor-shell .overflow-x-auto,
+.author-shell .overflow-x-auto {
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Fix article card content overflow */
+.reader-portal-news-card-content h3,
+.reader-portal-news-card-content p {
+    word-break: break-word;
+    overflow-wrap: break-word;
+}
+
+/* Fix reader detail article layout */
+.reader-detail-article {
+    min-width: 0;
+}
+.reader-detail-article h2 {
+    word-break: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+}
+
+/* ============================================================
+   BUG FIXES: MOBILE RESPONSIVE — all roles
+   ============================================================ */
+
+@media (max-width: 767px) {
+    /* Backoffice: hide sidebar text, show only icons on very small */
+    .admin-shell .admin-sidebar-label {
+        display: none;
+    }
+
+    /* Editor review detail: stack columns */
+    .editor-review-detail-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Admin/editor tables: horizontal scroll */
+    .admin-shell table,
+    .editor-shell table,
+    .author-shell table {
+        font-size: 12px;
+    }
+    .admin-shell th,
+    .admin-shell td,
+    .editor-shell th,
+    .editor-shell td,
+    .author-shell th,
+    .author-shell td {
+        padding: 8px 8px !important;
+    }
+
+    /* Reader home portal: full width hero */
+    .reader-shell.reader-shell-news-portal .reader-home-portal-hero-grid {
+        grid-template-columns: 1fr !important;
+    }
+    .reader-shell.reader-shell-news-portal .reader-home-portal-content-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Reader article detail: stack layout */
+    .reader-shell .reader-detail-layout {
+        grid-template-columns: 1fr !important;
+    }
+    .reader-shell .reader-detail-aside {
+        position: static !important;
+    }
+
+    /* Fix related articles grid on mobile */
+    .reader-shell .reader-related-card {
+        min-width: 0;
+    }
+
+    /* Dashboard KPI cards: 2 columns on mobile */
+    .admin-shell .grid.grid-cols-4,
+    .editor-shell .grid.grid-cols-4,
+    .author-shell .grid.grid-cols-4 {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+
+    /* Fix pagination on mobile */
+    .reader-shell .reader-pagination-btn,
+    .reader-shell .reader-pagination-active {
+        padding: 8px 10px !important;
+        font-size: 12px !important;
+    }
+
+    /* Fix header brand on mobile */
+    .reader-shell .reader-brand-text span:first-child {
+        font-size: 13px !important;
+    }
+
+    /* Fix top nav search on mobile */
+    .reader-shell.reader-shell-news-portal .reader-home-portal-top-nav .grid {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+@media (max-width: 480px) {
+    /* Very small screens: single column for related articles */
+    .reader-shell .mt-3.grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Fix hero overlay on very small screens */
+    .reader-shell.reader-shell-news-portal .reader-home-portal-hero-overlay {
+        padding: 10px 10px 48px !important;
+    }
+    .reader-shell.reader-shell-news-portal .reader-home-portal-hero-overlay h2 {
+        font-size: 1.25rem !important;
+    }
+
+    /* Fix backoffice header on very small screens */
+    .admin-shell .admin-topbar-title {
+        font-size: 14px !important;
+        max-width: 140px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+}
+
+/* Tablet responsive (641px - 1023px) */
+@media (min-width: 641px) and (max-width: 1023px) {
+    /* Reader home: 2-column article grid - handled by Tailwind sm: breakpoints */
+
+    /* Reader detail: stack layout */
+    .reader-shell .reader-detail-layout {
+        grid-template-columns: 1fr !important;
+    }
+    .reader-shell .reader-detail-aside {
+        position: static !important;
+    }
+
+    /* Editor review detail: stack on tablet */
+    .editor-review-detail-grid {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+
+/* ============================================================
+   EDITOR SHELL — Review Detail Dark Mode Fixes
+   ============================================================ */
+.editor-shell.ui-mode-night .editor-review-content h1,
+.editor-shell.ui-mode-night .editor-review-content h2,
+.editor-shell.ui-mode-night .editor-review-content h3 {
+    color: #e2ebf7 !important;
+}
+.editor-shell.ui-mode-night .editor-review-content blockquote {
+    border-color: #263549 !important;
+    color: #9cafc7 !important;
+}
+.editor-shell.ui-mode-night .editor-review-content a {
+    color: #8db6ff !important;
+}
+
+/* Fix checklist items in dark mode */
+.editor-shell.ui-mode-night .bg-emerald-100 {
+    background-color: #143a31 !important;
+}
+.editor-shell.ui-mode-night .text-emerald-700 {
+    color: #6ee7b7 !important;
+}
+.editor-shell.ui-mode-night .bg-rose-100 {
+    background-color: #4a2230 !important;
+}
+.editor-shell.ui-mode-night .text-rose-700 {
+    color: #fca5a5 !important;
+}
+.editor-shell.ui-mode-night .bg-amber-50 {
+    background-color: #3e2e10 !important;
+}
+.editor-shell.ui-mode-night .border-amber-100 {
+    border-color: #5a4020 !important;
+}
+.editor-shell.ui-mode-night .text-amber-800 {
+    color: #fcd34d !important;
+}
+.editor-shell.ui-mode-night .text-amber-600 {
+    color: #fbbf24 !important;
+}
+
+/* Fix review panel aside in dark mode */
+.editor-shell.ui-mode-night .rounded-lg.border.border-slate-200.bg-slate-50 {
+    background-color: #0e1829 !important;
+    border-color: #263549 !important;
+}
+.editor-shell.ui-mode-night .rounded-lg.border.border-slate-200.bg-white {
+    background-color: #111b2d !important;
+    border-color: #263549 !important;
+}
+
+/* ============================================================
+   AUTHOR SHELL — Dashboard & Articles Dark Mode
+   ============================================================ */
+.author-shell.ui-mode-night .bg-emerald-100,
+.author-shell.ui-mode-night .bg-emerald-50 {
+    background-color: #143a31 !important;
+}
+.author-shell.ui-mode-night .text-emerald-700,
+.author-shell.ui-mode-night .text-emerald-600 {
+    color: #6ee7b7 !important;
+}
+.author-shell.ui-mode-night .bg-amber-100,
+.author-shell.ui-mode-night .bg-amber-50 {
+    background-color: #3e2e10 !important;
+}
+.author-shell.ui-mode-night .text-amber-700,
+.author-shell.ui-mode-night .text-amber-600 {
+    color: #fbbf24 !important;
+}
+.author-shell.ui-mode-night .bg-rose-100,
+.author-shell.ui-mode-night .bg-rose-50 {
+    background-color: #4a2230 !important;
+}
+.author-shell.ui-mode-night .text-rose-700,
+.author-shell.ui-mode-night .text-rose-600 {
+    color: #fca5a5 !important;
+}
+.author-shell.ui-mode-night .bg-blue-50,
+.author-shell.ui-mode-night .bg-blue-100 {
+    background-color: #1a2f52 !important;
+}
+.author-shell.ui-mode-night .text-blue-700,
+.author-shell.ui-mode-night .text-blue-600 {
+    color: #8db6ff !important;
+}
+.author-shell.ui-mode-night .divide-slate-100 > * + * {
+    border-color: #1e2f45 !important;
+}
+
+/* ============================================================
+   FIX: Text overflow / word-break di halaman review editor
+   ============================================================ */
+.editor-shell .editor-review-content,
+.editor-shell .editor-review-content * {
+    word-break: break-word !important;
+    overflow-wrap: anywhere !important;
+    max-width: 100%;
+}
+.editor-shell .editor-review-content img {
+    max-width: 100%;
+    height: auto;
+}
+/* Judul dan excerpt di review detail */
+.editor-review-detail-grid article h2,
+.editor-review-detail-grid article p {
+    word-break: break-word !important;
+    overflow-wrap: anywhere !important;
+}
+
+
+/* ============================================================
+   GLOBAL FIX: Teks panjang tanpa spasi tidak meluber keluar
+   Berlaku untuk semua halaman (reader, editor, author, admin)
+   ============================================================ */
+
+/* Semua teks di dalam shell wajib break */
+.reader-shell *,
+.admin-shell *,
+.editor-shell *,
+.author-shell * {
+    min-width: 0;
+}
+
+.reader-shell h1, .reader-shell h2, .reader-shell h3,
+.reader-shell h4, .reader-shell p, .reader-shell span,
+.reader-shell td, .reader-shell th, .reader-shell li,
+.admin-shell h1, .admin-shell h2, .admin-shell h3,
+.admin-shell h4, .admin-shell p, .admin-shell span,
+.admin-shell td, .admin-shell th, .admin-shell li,
+.editor-shell h1, .editor-shell h2, .editor-shell h3,
+.editor-shell h4, .editor-shell p, .editor-shell span,
+.editor-shell td, .editor-shell th, .editor-shell li,
+.author-shell h1, .author-shell h2, .author-shell h3,
+.author-shell h4, .author-shell p, .author-shell span,
+.author-shell td, .author-shell th, .author-shell li {
+    word-break: break-word;
+    overflow-wrap: anywhere;
+}
+
+/* Grid dan flex container harus punya min-width: 0 */
+.reader-shell [class*="grid"],
+.reader-shell [class*="flex"],
+.admin-shell [class*="grid"],
+.admin-shell [class*="flex"],
+.editor-shell [class*="grid"],
+.editor-shell [class*="flex"],
+.author-shell [class*="grid"],
+.author-shell [class*="flex"] {
+    min-width: 0;
+}
+
+/* Tabel: cegah kolom melar */
+.admin-shell table,
+.editor-shell table,
+.author-shell table {
+    table-layout: fixed;
+    width: 100%;
+}
+.admin-shell td,
+.editor-shell td,
+.author-shell td {
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    max-width: 0;
+}
+
+
+/* ============================================================
+   GLOBAL FIX: Container overflow — semua artikel & tabel
+   ============================================================ */
+
+/* Reader article containers */
+.reader-shell .reader-detail-article,
+.reader-shell .reader-detail-layout > *,
+.reader-shell .reader-home-portal > *,
+.reader-shell .reader-portal-news-card {
+    min-width: 0;
+    overflow: hidden;
+}
+
+/* Editor/Author/Admin article containers */
+.editor-shell article,
+.editor-shell section,
+.author-shell article,
+.author-shell section,
+.admin-shell article,
+.admin-shell section {
+    min-width: 0;
+}
+
+/* Tabel: semua td/th tidak boleh melar */
+.admin-shell table,
+.editor-shell table,
+.author-shell table {
+    table-layout: fixed !important;
+    width: 100% !important;
+}
+.admin-shell td,
+.admin-shell th,
+.editor-shell td,
+.editor-shell th,
+.author-shell td,
+.author-shell th {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: normal;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+}
+
+/* Slug display di form penulis */
+.author-shell .author-slug-prefix + span,
+.author-shell [class*="slug"] {
+    word-break: break-all;
+    overflow-wrap: anywhere;
+    overflow: hidden;
+}
+
+
+/* ============================================================
+   FIX FINAL: word-break tanpa overflow:hidden (agar konten tidak terpotong)
+   ============================================================ */
+
+/* Override: hapus overflow:hidden dari container artikel */
+.reader-shell .reader-detail-article,
+.reader-shell .reader-detail-layout > *,
+.reader-shell .reader-home-portal > *,
+.reader-shell .reader-portal-news-card {
+    overflow: visible !important;
+}
+
+/* Tapi tetap break teks panjang */
+.editor-shell .editor-review-detail-grid,
+.editor-shell .editor-review-detail-grid * {
+    word-break: break-all !important;
+    overflow-wrap: anywhere !important;
+    min-width: 0;
+}
+
+/* Khusus gambar dan elemen non-teks: jangan break */
+.editor-shell .editor-review-detail-grid img,
+.editor-shell .editor-review-detail-grid button,
+.editor-shell .editor-review-detail-grid input,
+.editor-shell .editor-review-detail-grid textarea,
+.editor-shell .editor-review-detail-grid svg {
+    word-break: normal !important;
+    overflow-wrap: normal !important;
+}
