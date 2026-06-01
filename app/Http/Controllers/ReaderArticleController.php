@@ -638,7 +638,7 @@ class ReaderArticleController extends Controller
             'reader_id' => $legacyReaderId,
             'parent_id' => $validated['parent_id'] ?? null,
             'content' => $cleanContent,
-            'status' => 'pending',
+            'status' => 'approved',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -647,9 +647,11 @@ class ReaderArticleController extends Controller
             ->where('id', $commentId)
             ->first(['id', 'content', 'status', 'created_at', 'updated_at']);
 
+        Cache::forget(ReaderCache::commentsTotalKey((int) $article->id));
+
         return response()->json([
             'status' => 'success',
-            'message' => 'Komentar berhasil dikirim dan menunggu moderasi.',
+            'message' => 'Komentar berhasil dikirim.',
             'data' => [
                 'comment' => [
                     'id' => (int) $comment->id,
@@ -658,7 +660,7 @@ class ReaderArticleController extends Controller
                     'commenter_name' => $request->user()->name,
                     'created_at' => $comment->created_at,
                     'updated_at' => $comment->updated_at,
-                    'is_pending' => true,
+                    'is_pending' => false,
                 ],
             ],
         ], 201);
