@@ -424,14 +424,7 @@ export default function ReaderShell({
                                             <ul className="mt-2 space-y-1.5 text-xs text-slate-200">
                                                 {resolvedFooterCategories.length ? resolvedFooterCategories.map((cat) => (
                                                     <li key={cat.id}>{cat.name}</li>
-                                                )) : (
-                                                    <>
-                                                        <li>{t('reader.category.technology', 'Teknologi')}</li>
-                                                        <li>{t('reader.category.politics', 'Politik')}</li>
-                                                        <li>{t('reader.category.economy', 'Ekonomi')}</li>
-                                                        <li>{t('reader.category.sports', 'Olahraga')}</li>
-                                                    </>
-                                                )}
+                                                )) : null}
                                             </ul>
                                         </div>
 
