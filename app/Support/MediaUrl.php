@@ -2,8 +2,6 @@
 
 namespace App\Support;
 
-use Illuminate\Support\Facades\Storage;
-
 class MediaUrl
 {
     public static function resolve(?string $path): ?string
@@ -19,12 +17,13 @@ class MediaUrl
 
         $normalized = ltrim(str_replace('\\', '/', $path), '/');
 
-        // Strip leading "storage/" prefix — Storage::disk('public')->url() adds it
+        // Strip leading "storage/" prefix so we can build a consistent relative URL
         if (str_starts_with($normalized, 'storage/')) {
             $normalized = substr($normalized, strlen('storage/'));
         }
 
-        return Storage::disk('public')->url($normalized);
+        // Return a root-relative URL so it works regardless of APP_URL domain value
+        return '/storage/' . $normalized;
     }
 
     /**

@@ -12,5 +12,6 @@ cmds = [
 cmds = [
     "npm run build",
     "mkdir -p storage/framework/views storage/framework/sessions storage/framework/cache/data storage/logs storage/app/public",
+    "rm -f public/storage",
     "php artisan storage:link --force"
 ]
