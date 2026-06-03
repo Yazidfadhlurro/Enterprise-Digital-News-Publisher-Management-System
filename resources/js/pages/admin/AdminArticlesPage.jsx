@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import AdminShell from '../../components/AdminShell';
 import { apiRequest } from '../../lib/api';
 import { getToken } from '../../lib/auth';
@@ -40,6 +41,7 @@ function formatDate(value, localeTag) {
 
 export default function AdminArticlesPage() {
     const { t, intlLocale } = useI18n();
+    const navigate = useNavigate();
     const [searchInput, setSearchInput] = useState('');
     const [search, setSearch] = useState('');
     const [status, setStatus] = useState('all');
@@ -277,6 +279,27 @@ export default function AdminArticlesPage() {
         return t(`workflow.status.${status}`, articleStatusLabel(status));
     }
 
+    async function toggleFeatured(articleId, currentFeatured) {
+        const token = getToken();
+        const newValue = !currentFeatured;
+
+        // Optimistic update
+        setArticles((prev) => prev.map((a) => a.id === articleId ? { ...a, is_featured: newValue } : a));
+
+        try {
+            const payload = await apiRequest(`/admin/articles/${articleId}/featured`, {
+                method: 'PATCH',
+                token,
+                body: { is_featured: newValue },
+            });
+            if (payload?.status !== 'success') throw new Error(payload?.message);
+        } catch (err) {
+            // Revert on error
+            setArticles((prev) => prev.map((a) => a.id === articleId ? { ...a, is_featured: currentFeatured } : a));
+            setError(err.message || 'Gagal mengubah status unggulan.');
+        }
+    }
+
     return (
         <AdminShell
             title={t('admin.articles.title', 'Manajemen Berita')}
@@ -489,13 +512,15 @@ export default function AdminArticlesPage() {
                                 <th className="py-2.5 px-2">{t('table.category', 'Kategori')}</th>
                                 <th className="py-2.5 px-2">{t('table.date', 'Tanggal')}</th>
                                 <th className="py-2.5 px-2">{t('table.status', 'Status')}</th>
+                                <th className="py-2.5 px-2 text-center">★ Rating</th>
+                                <th className="py-2.5 px-2 text-center">{t('admin.articles.featured', 'Unggulan')}</th>
                                 <th className="py-2.5 px-2">{t('table.action', 'Aksi')}</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                             {loading ? (
                                 <tr>
-                                    <td colSpan={6} className="py-6 text-center text-slate-400">{t('common.loadingData', 'Memuat data...')}</td>
+                                    <td colSpan={8} className="py-6 text-center text-slate-400">{t('common.loadingData', 'Memuat data...')}</td>
                                 </tr>
                             ) : articles.length ? (
                                 articles.map((article) => (
@@ -509,12 +534,32 @@ export default function AdminArticlesPage() {
                                                 {workflowStatusLabel(article.status)}
                                             </span>
                                         </td>
+                                        <td className="py-3 px-2 text-center text-sm">
+                                            {article.ratings_total > 0 ? (
+                                                <span className="inline-flex items-center gap-1 text-amber-600 font-semibold">
+                                                    ★ {Number(article.average_rating).toFixed(1)}
+                                                    <span className="text-[10px] text-slate-400 font-normal">({article.ratings_total})</span>
+                                                </span>
+                                            ) : (
+                                                <span className="text-slate-300 text-xs">-</span>
+                                            )}
+                                        </td>
+                                        <td className="py-3 px-2 text-center">
+                                            <button
+                                                type="button"
+                                                onClick={() => toggleFeatured(article.id, article.is_featured)}
+                                                className={`inline-flex items-center justify-center w-8 h-8 rounded-full border text-sm transition ${article.is_featured ? 'bg-amber-100 border-amber-400 text-amber-700' : 'bg-white border-slate-200 text-slate-400 hover:text-amber-500'}`}
+                                                title={article.is_featured ? 'Hapus dari unggulan' : 'Jadikan unggulan'}
+                                            >
+                                                ★
+                                            </button>
+                                        </td>
                                         <td className="py-3 px-2">
                                             <div className="flex items-center gap-2 text-xs">
                                                 <button
                                                     type="button"
                                                     className="portal-btn portal-btn-secondary portal-btn-sm admin-detail-btn"
-                                                    onClick={() => openDetailPanel(article.id)}
+                                                    onClick={() => navigate(`/admin/articles/${article.id}`)}
                                                 >
                                                     {t('table.detail', 'Detail')}
                                                 </button>
@@ -538,7 +583,7 @@ export default function AdminArticlesPage() {
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan={6} className="py-6 text-center text-slate-400">{t('admin.articles.empty', 'Data artikel tidak ditemukan.')}</td>
+                                    <td colSpan={8} className="py-6 text-center text-slate-400">{t('admin.articles.empty', 'Data artikel tidak ditemukan.')}</td>
                                 </tr>
                             )}
                         </tbody>
