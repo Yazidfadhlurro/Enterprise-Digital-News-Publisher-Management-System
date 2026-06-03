@@ -283,18 +283,16 @@ export default function AdminArticlesPage() {
         const token = getToken();
         const newValue = !currentFeatured;
 
-        // Optimistic update
         setArticles((prev) => prev.map((a) => a.id === articleId ? { ...a, is_featured: newValue } : a));
 
         try {
-            const payload = await apiRequest(`/admin/articles/${articleId}/featured`, {
-                method: 'PATCH',
+            const payload = await apiRequest(`/admin/articles/${articleId}`, {
+                method: 'PUT',
                 token,
                 body: { is_featured: newValue },
             });
             if (payload?.status !== 'success') throw new Error(payload?.message);
         } catch (err) {
-            // Revert on error
             setArticles((prev) => prev.map((a) => a.id === articleId ? { ...a, is_featured: currentFeatured } : a));
             setError(err.message || 'Gagal mengubah status unggulan.');
         }
@@ -545,14 +543,13 @@ export default function AdminArticlesPage() {
                                             )}
                                         </td>
                                         <td className="py-3 px-2 text-center">
-                                            <button
-                                                type="button"
-                                                onClick={() => toggleFeatured(article.id, article.is_featured)}
-                                                className={`inline-flex items-center justify-center w-8 h-8 rounded-full border text-sm transition ${article.is_featured ? 'bg-amber-100 border-amber-400 text-amber-700' : 'bg-white border-slate-200 text-slate-400 hover:text-amber-500'}`}
+                                            <input
+                                                type="checkbox"
+                                                checked={Boolean(article.is_featured)}
+                                                onChange={() => toggleFeatured(article.id, article.is_featured)}
+                                                className="w-4 h-4 accent-amber-500 cursor-pointer"
                                                 title={article.is_featured ? 'Hapus dari unggulan' : 'Jadikan unggulan'}
-                                            >
-                                                ★
-                                            </button>
+                                            />
                                         </td>
                                         <td className="py-3 px-2">
                                             <div className="flex items-center gap-2 text-xs">

@@ -132,6 +132,8 @@ Route::middleware([
             ->middleware('action-permission:admin.articles.view');
         Route::put('/articles/{id}', [AdminArticleController::class, 'update'])
             ->middleware('action-permission:admin.articles.update');
+        Route::patch('/articles/{id}/featured', [AdminArticleController::class, 'toggleFeatured'])
+            ->middleware('action-permission:admin.articles.update');
         Route::delete('/articles/{id}', [AdminArticleController::class, 'destroy'])
             ->middleware('action-permission:admin.articles.delete');
 

@@ -34,6 +34,10 @@ class AdminArticleController extends Controller
         $query = DB::table('articles as a')
             ->leftJoin('users as u', 'u.id', '=', 'a.author_id')
             ->leftJoin('categories as c', 'c.id', '=', 'a.category_id')
+            ->leftJoin(
+                DB::raw('(SELECT article_id, ROUND(AVG(rating)::numeric, 2) as avg_rating, COUNT(*) as ratings_total FROM article_ratings GROUP BY article_id) as ar'),
+                'ar.article_id', '=', 'a.id'
+            )
             ->select(
                 'a.id',
                 'a.title',
@@ -42,8 +46,11 @@ class AdminArticleController extends Controller
                 'a.excerpt',
                 'a.created_at',
                 'a.published_at',
+                'a.is_featured',
                 DB::raw("COALESCE(u.name, '-') as author_name"),
-                DB::raw("COALESCE(c.name, '-') as category_name")
+                DB::raw("COALESCE(c.name, '-') as category_name"),
+                DB::raw('COALESCE(ar.avg_rating, 0) as average_rating'),
+                DB::raw('COALESCE(ar.ratings_total, 0) as ratings_total')
             );
 
         if ($search !== '') {
@@ -76,6 +83,9 @@ class AdminArticleController extends Controller
                     'author_name' => $article->author_name,
                     'category_name' => $article->category_name,
                     'status' => $article->status,
+                    'is_featured' => (bool) $article->is_featured,
+                    'average_rating' => (float) $article->average_rating,
+                    'ratings_total' => (int) $article->ratings_total,
                     'date' => $article->published_at ?? $article->created_at,
                 ];
             })
@@ -408,6 +418,31 @@ class AdminArticleController extends Controller
         return response()->json([
             'status' => 'success',
             'message' => 'Artikel berhasil dihapus.',
+        ]);
+    }
+
+    public function toggleFeatured(Request $request, int $id): JsonResponse
+    {
+        $article = DB::table('articles')->where('id', $id)->first();
+
+        if (!$article) {
+            return response()->json(['status' => 'error', 'message' => 'Artikel tidak ditemukan.'], 404);
+        }
+
+        $isFeatured = (bool) $request->input('is_featured', !$article->is_featured);
+
+        DB::table('articles')->where('id', $id)->update([
+            'is_featured' => $isFeatured,
+            'updated_at' => now(),
+        ]);
+
+        ReaderCache::forgetArticleCaches($id);
+        ReaderCache::forgetInsights();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => $isFeatured ? 'Artikel dijadikan unggulan.' : 'Artikel dihapus dari unggulan.',
+            'data' => ['is_featured' => $isFeatured],
         ]);
     }
 

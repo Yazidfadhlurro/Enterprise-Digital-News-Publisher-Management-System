@@ -89,9 +89,9 @@ export default function ReaderArticleDetailPage() {
         }
     }
 
-    async function loadComments() {
+    async function loadComments(silent = false) {
         const token = getToken();
-        setCommentsLoading(true);
+        if (!silent) setCommentsLoading(true);
         setError('');
 
         try {
@@ -229,7 +229,7 @@ export default function ReaderArticleDetailPage() {
 
             setCommentInput('');
             notify.info(t('reader.detail.commentQueued', 'Komentar terkirim dan menunggu moderasi.'));
-            await loadComments();
+            await loadComments(true);
         } catch (err) {
             setError(err.message || t('reader.detail.errorCommentDefault', 'Terjadi kesalahan saat mengirim komentar.'));
         } finally {
