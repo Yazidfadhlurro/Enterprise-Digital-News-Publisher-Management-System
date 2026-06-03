@@ -103,8 +103,16 @@ export default function ReaderShell({
     footerCategories = [],
 }) {
     const navigate = useNavigate();
-    const user = getUser();
+    const [user, setUser] = useState(() => getUser());
     const { t, intlLocale } = useI18n();
+
+    useEffect(() => {
+        function onUserUpdated() {
+            setUser(getUser());
+        }
+        window.addEventListener('user-updated', onUserUpdated);
+        return () => window.removeEventListener('user-updated', onUserUpdated);
+    }, []);
     const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
     const profileMenuRef = useRef(null);
     const readingZoneRef = useRef(null);

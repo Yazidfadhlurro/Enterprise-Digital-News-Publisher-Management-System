@@ -361,6 +361,15 @@ export default function ProfileSettingsPage({
             };
 
             updateStoredUser(mergedUser);
+            window.dispatchEvent(new Event('user-updated'));
+
+            setProfileForm({
+                name: String(mergedUser?.name || ''),
+                email: String(mergedUser?.email || ''),
+                phone: String(mergedUser?.phone || ''),
+                address: String(mergedUser?.address || ''),
+                bio: String(mergedUser?.bio || ''),
+            });
 
             const resolvedAvatar = resolveAvatarUrl(mergedUser?.avatar || '');
             setAvatarPreview(resolvedAvatar);
@@ -416,8 +425,6 @@ export default function ProfileSettingsPage({
             setSavingPassword(false);
         }
     }
-
-    const currentRoleLabel = roleLabel || t(`role.${currentUser?.role || ''}`, currentUser?.role || '-');
 
     const avatarInitial = useMemo(
         () => initials(profileForm.name, initials(currentUser?.name, 'U')),
@@ -529,16 +536,6 @@ export default function ProfileSettingsPage({
                                         maxLength={1000}
                                         className="settings-input w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-blue-600 focus:outline-none"
                                         placeholder={t('settings.bioPlaceholder', 'Tulis deskripsi singkat tentang Anda...')}
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-[11px] uppercase tracking-wide text-slate-500 mb-1">{t('table.role', 'Role')}</label>
-                                    <input
-                                        type="text"
-                                        value={currentRoleLabel}
-                                        className="settings-input w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-500"
-                                        disabled
                                     />
                                 </div>
 

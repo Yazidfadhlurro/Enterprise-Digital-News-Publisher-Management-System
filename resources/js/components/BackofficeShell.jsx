@@ -127,9 +127,17 @@ export default function BackofficeShell({
 }) {
     const navigate = useNavigate();
     const location = useLocation();
-    const user = getUser();
+    const [user, setUser] = useState(() => getUser());
     const contentRef = useRef(null);
     const { t } = useI18n();
+
+    useEffect(() => {
+        function onUserUpdated() {
+            setUser(getUser());
+        }
+        window.addEventListener('user-updated', onUserUpdated);
+        return () => window.removeEventListener('user-updated', onUserUpdated);
+    }, []);
 
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
         try {
