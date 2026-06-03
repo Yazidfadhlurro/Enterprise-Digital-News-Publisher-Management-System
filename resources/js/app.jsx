@@ -12,6 +12,7 @@ const WelcomePage = lazy(() => import('./pages/WelcomePage'));
 
 const AdminDashboardPage = lazy(() => import('./pages/admin/AdminDashboardPage'));
 const AdminArticlesPage = lazy(() => import('./pages/admin/AdminArticlesPage'));
+const AdminArticleDetailPage = lazy(() => import('./pages/admin/AdminArticleDetailPage'));
 const AdminCategoriesPage = lazy(() => import('./pages/admin/AdminCategoriesPage'));
 const AdminUsersPage = lazy(() => import('./pages/admin/AdminUsersPage'));
 const AdminAssignmentMatrixPage = lazy(() => import('./pages/admin/AdminAssignmentMatrixPage'));
@@ -107,6 +108,7 @@ export default function App() {
                     <Route path="/welcome" element={<RequireAuth><WelcomePage /></RequireAuth>} />
                     <Route path="/admin/dashboard" element={<RequireAdmin><AdminDashboardPage /></RequireAdmin>} />
                     <Route path="/admin/articles" element={<RequireAdmin><AdminArticlesPage /></RequireAdmin>} />
+                    <Route path="/admin/articles/:id" element={<RequireAdmin><AdminArticleDetailPage /></RequireAdmin>} />
                     <Route path="/admin/categories" element={<RequireAdmin><AdminCategoriesPage /></RequireAdmin>} />
                     <Route path="/admin/users" element={<RequireAdmin><AdminUsersPage /></RequireAdmin>} />
                     <Route path="/admin/assignments" element={<RequireAdmin><AdminAssignmentMatrixPage /></RequireAdmin>} />
