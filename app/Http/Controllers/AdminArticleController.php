@@ -460,6 +460,7 @@ class AdminArticleController extends Controller
             'excerpt' => $article->excerpt,
             'content' => $article->content,
             'featured_image' => $article->featured_image,
+            'featured_image_url' => \App\Support\MediaUrl::resolve($article->featured_image),
             'status' => $article->status,
             'reviewer_id' => $article->reviewer_id ? (int) $article->reviewer_id : null,
             'reviewer_name' => $article->reviewer_name,

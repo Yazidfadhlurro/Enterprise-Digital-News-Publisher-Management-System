@@ -13,7 +13,6 @@
         "laravel/tinker": "^2.10.1",
         "nyholm/psr7": "^1.8",
         "resend/resend-laravel": "^1.4",
-        "symfony/brevo-mailer": "^7.4",
         "symfony/http-client": "^7.4"
     },
     "require-dev": {

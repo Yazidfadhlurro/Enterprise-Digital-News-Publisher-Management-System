@@ -444,7 +444,16 @@ class AuthController extends Controller
             $scope = $this->passwordResetScopeForUser($user);
             $resetUrl = $this->createPasswordResetUrl($token, $email, $scope);
 
-            Mail::to($user->email)->send(new SendPasswordResetLink($user, $resetUrl));
+            try {
+                Mail::to($user->email)->send(new SendPasswordResetLink($user, $resetUrl));
+            } catch (\Exception $e) {
+                Log::error('Email reset password gagal dikirim', [
+                    'user_id' => $user->id,
+                    'email' => $email,
+                    'error_class' => get_class($e),
+                    'error_message' => $e->getMessage(),
+                ]);
+            }
         }
 
         return response()->json([
