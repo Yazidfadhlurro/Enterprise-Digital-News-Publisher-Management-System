@@ -105,6 +105,21 @@ export default function ReaderShell({
     const navigate = useNavigate();
     const [user, setUser] = useState(() => getUser());
     const { t, intlLocale } = useI18n();
+    const [resolvedFooterCategories, setResolvedFooterCategories] = useState(footerCategories);
+
+    useEffect(() => {
+        setResolvedFooterCategories(footerCategories);
+    }, [footerCategories]);
+
+    useEffect(() => {
+        if (footerCategories.length) return;
+        apiRequest('/user/articles?per_page=1', { token: getToken() })
+            .then((payload) => {
+                const cats = payload?.data?.filters?.category_options || [];
+                if (cats.length) setResolvedFooterCategories(cats.slice(0, 4));
+            })
+            .catch(() => {});
+    }, []);
 
     useEffect(() => {
         function onUserUpdated() {
@@ -407,7 +422,7 @@ export default function ReaderShell({
                                         <div>
                                             <h5 className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-300">{t('reader.home.categories', 'Kategori')}</h5>
                                             <ul className="mt-2 space-y-1.5 text-xs text-slate-200">
-                                                {footerCategories.length ? footerCategories.map((cat) => (
+                                                {resolvedFooterCategories.length ? resolvedFooterCategories.map((cat) => (
                                                     <li key={cat.id}>{cat.name}</li>
                                                 )) : (
                                                     <>
