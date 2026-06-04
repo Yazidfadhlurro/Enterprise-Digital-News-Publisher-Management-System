@@ -64,7 +64,7 @@ export default function AdminArticleDetailPage() {
                     {t('common.loadingData', 'Memuat data...')}
                 </section>
             ) : article ? (
-                <article className="rounded-xl border border-slate-200 bg-white p-5 md:p-6 shadow-sm min-w-0" style={{ wordBreak: 'break-all', overflowWrap: 'anywhere' }}>
+                <article className="rounded-xl border border-slate-200 bg-white p-5 md:p-6 shadow-sm min-w-0" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
                     <p className="text-xs uppercase tracking-[0.12em] text-blue-700 font-semibold">{article.category_name || '-'}</p>
                     <h2 className="text-xl md:text-2xl leading-snug font-semibold text-slate-900 mt-2">{article.title}</h2>
                     <p className="mt-3 text-sm leading-6 text-slate-600">{article.excerpt || t('editor.reviewDetail.noSummary', 'Tidak ada ringkasan berita.')}</p>
