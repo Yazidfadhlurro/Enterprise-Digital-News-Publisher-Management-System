@@ -3033,8 +3033,8 @@ body {
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
-    padding: 20px 20px 58px;
-    background: linear-gradient(180deg, rgba(5, 25, 48, 0.08) 18%, rgba(5, 25, 48, 0.82) 84%);
+    padding: clamp(12px, 3vw, 20px) clamp(12px, 3vw, 20px) clamp(44px, 7vw, 58px);
+    background: linear-gradient(180deg, rgba(5, 25, 48, 0.08) 18%, rgba(5, 25, 48, 0.88) 84%);
     overflow: hidden;
 }
 
@@ -3045,6 +3045,8 @@ body {
     overflow: hidden;
     word-break: break-word;
     overflow-wrap: break-word;
+    font-size: clamp(1.1rem, 4vw, 2.4rem);
+    line-height: 1.25;
 }
 
 .reader-shell.reader-shell-news-portal .reader-home-portal-hero-overlay p {
