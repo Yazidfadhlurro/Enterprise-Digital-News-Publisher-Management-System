@@ -137,7 +137,7 @@ export default function EditorReviewDetailPage() {
                 </section>
             ) : article ? (
                 <section className="editor-review-detail-grid grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_290px] gap-4 items-start min-w-0">
-                    <article className="rounded-xl border border-slate-200 bg-white p-5 md:p-6 shadow-sm min-w-0" style={{wordBreak:'break-all',overflowWrap:'anywhere'}}>
+                    <article className="rounded-xl border border-slate-200 bg-white p-5 md:p-6 shadow-sm min-w-0" style={{wordBreak:'break-word',overflowWrap:'anywhere'}}>
                         <h2 className="text-xl md:text-2xl leading-snug font-semibold text-slate-900">{t(dynamicKey('editor.reviewDetail.articleTitle', article.title), article.title)}</h2>
                         <p className="mt-3 text-sm leading-6 text-slate-600">{article.excerpt ? t(dynamicKey('editor.reviewDetail.articleExcerpt', article.excerpt), article.excerpt) : t('editor.reviewDetail.noSummary', 'Tidak ada ringkasan berita.')}</p>
 
