@@ -98,6 +98,7 @@ export default function ProfileSettingsPage({
     });
     const [avatarPreview, setAvatarPreview] = useState(resolveAvatarUrl(currentUser?.avatar || ''));
     const [avatarFile, setAvatarFile] = useState(null);
+    const [removeAvatar, setRemoveAvatar] = useState(false);
     const [isCropModalOpen, setIsCropModalOpen] = useState(false);
     const [cropSource, setCropSource] = useState('');
     const [cropZoom, setCropZoom] = useState(1);
@@ -180,6 +181,7 @@ export default function ProfileSettingsPage({
             clearLocalAvatarPreviewObjectUrl();
             setAvatarPreview(resolveAvatarUrl(user?.avatar || ''));
             setAvatarFile(null);
+            setRemoveAvatar(false);
 
             const mergedUser = {
                 ...getUser(),
@@ -346,6 +348,7 @@ export default function ProfileSettingsPage({
                         phone: cleanPhone || null,
                         address: cleanAddress || null,
                         bio: cleanBio || null,
+                        remove_avatar: removeAvatar || undefined,
                     },
                 });
             }
@@ -374,6 +377,7 @@ export default function ProfileSettingsPage({
             const resolvedAvatar = resolveAvatarUrl(mergedUser?.avatar || '');
             setAvatarPreview(resolvedAvatar);
             setAvatarFile(null);
+            setRemoveAvatar(false);
             clearLocalAvatarPreviewObjectUrl();
 
             notify.success(t('settings.profileSaved', 'Biodata dan foto profil berhasil diperbarui.'));
@@ -469,6 +473,32 @@ export default function ProfileSettingsPage({
                                         onChange={onAvatarChange}
                                     />
                                 </label>
+
+                                {(avatarPreview || avatarFile) && !removeAvatar ? (
+                                    <button
+                                        type="button"
+                                        className="portal-btn portal-btn-danger portal-btn-sm"
+                                        onClick={() => {
+                                            setRemoveAvatar(true);
+                                            setAvatarFile(null);
+                                            setAvatarPreview('');
+                                            clearLocalAvatarPreviewObjectUrl();
+                                        }}
+                                    >
+                                        {t('settings.removePhoto', 'Hapus Foto')}
+                                    </button>
+                                ) : removeAvatar ? (
+                                    <button
+                                        type="button"
+                                        className="portal-btn portal-btn-secondary portal-btn-sm"
+                                        onClick={() => {
+                                            setRemoveAvatar(false);
+                                            setAvatarPreview(resolveAvatarUrl(getUser()?.avatar || ''));
+                                        }}
+                                    >
+                                        {t('common.cancel', 'Batal')}
+                                    </button>
+                                ) : null}
 
                                 <p className="text-[11px] text-slate-500">{t('settings.photoHint', 'PNG/JPG/WEBP maksimal 4MB.')}</p>
                             </div>
