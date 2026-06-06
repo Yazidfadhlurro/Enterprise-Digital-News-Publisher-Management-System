@@ -3033,27 +3033,25 @@ body {
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
-    padding: clamp(12px, 3vw, 20px) clamp(12px, 3vw, 20px) clamp(44px, 7vw, 58px);
+    padding: 12px 14px 52px;
     background: linear-gradient(180deg, rgba(5, 25, 48, 0.08) 18%, rgba(5, 25, 48, 0.88) 84%);
     overflow: hidden;
 }
 
 .reader-shell.reader-shell-news-portal .reader-home-portal-hero-overlay h2 {
     display: -webkit-box;
-    -webkit-line-clamp: 3;
+    -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
     word-break: break-word;
     overflow-wrap: break-word;
-    font-size: clamp(1.1rem, 4vw, 2.4rem);
-    line-height: 1.25;
+    font-size: clamp(1rem, 3.5vw, 2.2rem);
+    line-height: 1.3;
+    margin-top: 6px;
 }
 
 .reader-shell.reader-shell-news-portal .reader-home-portal-hero-overlay p {
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
+    display: none;
 }
 
 .reader-shell.reader-shell-news-portal .reader-home-portal-hero-tag {

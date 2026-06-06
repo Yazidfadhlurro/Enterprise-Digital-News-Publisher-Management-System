@@ -453,8 +453,7 @@ export default function ReaderHomePage() {
                                         )}
                                         <div className="reader-home-portal-hero-overlay">
                                             <p className="reader-home-portal-hero-tag">{t('reader.home.trendingWeeklyLabel', 'Top Trending Mingguan')}</p>
-                                            <h2 className="reader-display mt-1.5 text-xl sm:text-3xl sm:text-[38px] leading-tight font-semibold text-white line-clamp-3">{heroArticle.title || '-'}</h2>
-                                            <p className="hidden sm:block mt-3 max-w-2xl text-sm leading-6 text-white/90 line-clamp-2">{heroArticle.excerpt || t('reader.home.noExcerpt', 'Ringkasan belum tersedia.')}</p>
+                                            <h2 className="reader-display mt-1.5 leading-tight font-semibold text-white line-clamp-2">{heroArticle.title || '-'}</h2>
                                             <span className="reader-home-portal-hero-cta mt-3 inline-flex items-center rounded-md px-3 py-2 text-xs font-semibold">
                                                 {t('reader.home.readMore', 'Baca Selengkapnya')}
                                             </span>
