@@ -70,7 +70,7 @@ export default function AuthorShell({ title, subtitle, action, children }) {
             label: t('nav.author.articles', 'Artikel Saya'),
             to: '/author/articles',
             Icon: ArticleIcon,
-            isActive: (pathname) => pathname === '/author/articles' || /^\/author\/articles\/\d+\/edit$/.test(pathname),
+            isActive: (pathname) => pathname === '/author/articles' || /^\/author\/articles\/\d+\/(edit|view)$/.test(pathname),
         },
         {
             label: t('nav.author.activities', 'Log Aktivitas'),

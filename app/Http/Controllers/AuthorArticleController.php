@@ -348,14 +348,14 @@ class AuthorArticleController extends Controller
             'content' => $detailed['content'] ?? null,
             'data' => [
                 'article' => array_merge($detailed, [
-                    'average_rating' => (float) DB::table('article_ratings')->where('article_id', $id)->avg('rating') ?? 0,
+                    'average_rating' => (float) (DB::table('article_ratings')->where('article_id', $id)->avg('rating') ?? 0),
                     'ratings_total' => (int) DB::table('article_ratings')->where('article_id', $id)->count(),
                     'views_count' => (int) DB::table('articles')->where('id', $id)->value('views_count'),
                 ]),
-                'comments' => DB::table('article_comments as c')
+                'comments' => DB::table('comments as c')
                     ->leftJoin('users as u', 'u.id', '=', 'c.user_id')
                     ->where('c.article_id', $id)
-                    ->where('c.is_approved', true)
+                    ->where('c.status', 'approved')
                     ->orderByDesc('c.created_at')
                     ->limit(50)
                     ->get([
@@ -364,7 +364,7 @@ class AuthorArticleController extends Controller
                         'c.created_at',
                         DB::raw("COALESCE(u.name, 'Pembaca') as commenter_name"),
                     ])
-                    ->map(fn($r) => (array) $r)
+                    ->map(function ($r) { return (array) $r; })
                     ->values()
                     ->toArray(),
             ],
