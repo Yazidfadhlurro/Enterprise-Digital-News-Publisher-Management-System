@@ -280,7 +280,7 @@ export default function ArticleFeedbackPage({
                                 <th className="py-2.5 px-3">{t('feedback.totalRating', 'Jumlah Rating')}</th>
                                 <th className="py-2.5 px-3">{t('feedback.totalComments', 'Jumlah Komentar')}</th>
                                 <th className="py-2.5 px-3">{t('feedback.latestComment', 'Komentar Terbaru')}</th>
-                                <th className="py-2.5 px-3">{t('feedback.latestReader', 'Pembaca')}</th>
+                                <th className="py-2.5 px-3">{t('feedback.viewsCount', 'Pembaca')}</th>
                                 <th className="py-2.5 px-3">{t('table.time', 'Waktu')}</th>
                                 <th className="py-2.5 px-3">{t('table.action', 'Aksi')}</th>
                             </tr>
@@ -306,7 +306,7 @@ export default function ArticleFeedbackPage({
                                         <td className="py-3 px-3 text-slate-600 max-w-[260px]">
                                             <span className="block truncate">{row.latest_comment ? t(dynamicKey('feedback.latestCommentText', row.latest_comment), row.latest_comment) : '-'}</span>
                                         </td>
-                                        <td className="py-3 px-3 text-slate-600">{row.latest_commenter_name ? t(dynamicKey('feedback.latestReaderText', row.latest_commenter_name), row.latest_commenter_name) : '-'}</td>
+                                        <td className="py-3 px-3 text-slate-600">{row.views_count ?? 0}</td>
                                         <td className="py-3 px-3 text-slate-500">{formatDateTime(row.latest_comment_at || row.updated_at, intlLocale)}</td>
                                         <td className="py-3 px-3">
                                             {typeof buildViewPath === 'function' && buildViewPath(row) ? (

@@ -134,6 +134,7 @@ class ArticleFeedbackController extends Controller
                 'a.category_id',
                 'a.status',
                 'a.updated_at',
+                'a.views_count',
                 DB::raw("COALESCE(au.name, '-') as author_name"),
                 DB::raw($hasCategoriesTable ? "COALESCE(ca.name, '-') as category_name" : "'-' as category_name"),
             ]);
@@ -242,6 +243,7 @@ class ArticleFeedbackController extends Controller
                     'latest_comment_status' => $latestComment ? $latestComment->status : null,
                     'latest_commenter_name' => $latestComment ? $latestComment->reader_name : null,
                     'latest_comment_at' => $latestComment ? $latestComment->created_at : null,
+                    'views_count' => (int) ($article->views_count ?? 0),
                     'updated_at' => $article->updated_at,
                 ];
             })
