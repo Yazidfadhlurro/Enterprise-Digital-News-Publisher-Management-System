@@ -421,6 +421,12 @@ export default function AuthorArticleFormPage() {
                 }
 
                 const article = payload?.data?.article;
+
+                if (!['draft', 'revision'].includes(article?.status)) {
+                    navigate(`/author/articles/${id}/view`, { replace: true });
+                    return;
+                }
+
                 hydrateArticle(article);
                 await loadVersions(id);
                 autosaveInitializedRef.current = false;

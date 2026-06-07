@@ -138,7 +138,13 @@ export default function AuthorDashboardPage() {
                                                     {t('table.edit', 'Edit')}
                                                 </button>
                                             ) : (
-                                                <span className="text-xs text-slate-400">{t('author.dashboard.readOnly', 'Hanya Baca')}</span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => navigate(`/author/articles/${article.id}/view`)}
+                                                    className="portal-btn portal-btn-secondary portal-btn-sm"
+                                                >
+                                                    {t('table.detail', 'Lihat')}
+                                                </button>
                                             )}
                                         </td>
                                     </tr>

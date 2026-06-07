@@ -13,7 +13,7 @@ export default function AuthorActivityPage() {
             endpoint="/author/activities"
             buildDetailPath={(activity) => (
                 activity?.article_id
-                    ? `/author/articles/${activity.article_id}/edit`
+                    ? `/author/articles/${activity.article_id}/view`
                     : null
             )}
             quickActionLabel={t('activity.quickAction.openNews', 'Buka Berita')}

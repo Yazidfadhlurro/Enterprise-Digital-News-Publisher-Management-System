@@ -12,7 +12,7 @@ export default function AuthorFeedbackPage() {
             title={t('feedback.author.title', 'Komentar & Rating Berita Saya')}
             endpoint="/author/feedback"
             showInsights
-            buildViewPath={(row) => (row?.article_id ? `/author/articles/${row.article_id}/edit` : null)}
+            buildViewPath={(row) => (row?.article_id ? `/author/articles/${row.article_id}/view` : null)}
             viewButtonLabel={t('feedback.openOwnArticle', 'Lihat Berita')}
         />
     );
