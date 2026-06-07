@@ -32,6 +32,7 @@ const EditorSettingsPage = lazy(() => import('./pages/editor/EditorSettingsPage'
 const AuthorDashboardPage = lazy(() => import('./pages/author/AuthorDashboardPage'));
 const AuthorArticlesPage = lazy(() => import('./pages/author/AuthorArticlesPage'));
 const AuthorArticleFormPage = lazy(() => import('./pages/author/AuthorArticleFormPage'));
+const AuthorArticleViewPage = lazy(() => import('./pages/author/AuthorArticleViewPage'));
 const AuthorActivityPage = lazy(() => import('./pages/author/AuthorActivityPage'));
 const AuthorFeedbackPage = lazy(() => import('./pages/author/AuthorFeedbackPage'));
 const AuthorSettingsPage = lazy(() => import('./pages/author/AuthorSettingsPage'));
@@ -129,6 +130,7 @@ export default function App() {
                     <Route path="/author/articles" element={<RequireAuthor><AuthorArticlesPage /></RequireAuthor>} />
                     <Route path="/author/articles/create" element={<RequireAuthor><AuthorArticleFormPage /></RequireAuthor>} />
                     <Route path="/author/articles/:id/edit" element={<RequireAuthor><AuthorArticleFormPage /></RequireAuthor>} />
+                    <Route path="/author/articles/:id/view" element={<RequireAuthor><AuthorArticleViewPage /></RequireAuthor>} />
                     <Route path="/author/activities" element={<RequireAuthor><AuthorActivityPage /></RequireAuthor>} />
                     <Route path="/author/feedback" element={<RequireAuthor><AuthorFeedbackPage /></RequireAuthor>} />
                     <Route path="/author/settings" element={<RequireAuthor><AuthorSettingsPage /></RequireAuthor>} />

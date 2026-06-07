@@ -300,11 +300,16 @@ export default function AuthorArticleFormPage() {
     }, []);
 
     async function loadMediaLibrary() {
+        if (!isEdit) {
+            setMediaItems([]);
+            return;
+        }
+
         const token = getToken();
         setMediaLoading(true);
 
         try {
-            const payload = await apiRequest('/author/media', { token });
+            const payload = await apiRequest(`/author/media?article_id=${id}`, { token });
             if (payload?.status === 'success') {
                 setMediaItems(payload?.data?.media || []);
             }
@@ -393,6 +398,7 @@ export default function AuthorArticleFormPage() {
             setContentBlocks([freshBlock]);
             setActiveTextBlockId(freshBlock.id);
             setSelectedMediaId(null);
+            setMediaItems([]);
             autosaveInitializedRef.current = false;
         }
     }, [isEdit]);
