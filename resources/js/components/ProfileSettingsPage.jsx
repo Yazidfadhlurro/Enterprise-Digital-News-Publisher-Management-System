@@ -420,9 +420,8 @@ export default function ProfileSettingsPage({
                 throw new Error(payload?.message || t('settings.errorPasswordSave', 'Gagal mengubah password.'));
             }
 
-            notify.info(t('settings.passwordSaved', 'Password berhasil diubah. Silakan login kembali.'));
-            clearAuth();
-            navigate('/', { replace: true });
+            notify.success(t('settings.passwordSaved', 'Password berhasil diubah.'));
+            setPasswordForm({ current_password: '', password: '', password_confirmation: '' });
         } catch (err) {
             setError(err.message || t('settings.errorPasswordSaveDefault', 'Terjadi kesalahan saat mengubah password.'));
         } finally {
