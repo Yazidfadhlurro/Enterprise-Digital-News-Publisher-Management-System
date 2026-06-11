@@ -5,6 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="google" content="notranslate">
     <title>Portal Berita</title>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-2DZLJZYT26"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-2DZLJZYT26');
+    </script>
     @viteReactRefresh
     @vite(['resources/js/main.jsx'])
 </head>

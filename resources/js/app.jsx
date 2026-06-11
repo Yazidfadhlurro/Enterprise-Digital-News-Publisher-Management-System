@@ -1,5 +1,5 @@
 import React, { Suspense, lazy, useEffect } from 'react';
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { getToken, getUser, bootstrapSession } from './lib/auth';
 
 const LoginPage = lazy(() => import('./pages/LoginPage'));
@@ -88,10 +88,17 @@ const Fallback = () => (
 
 export default function App() {
     const [ready, setReady] = React.useState(false);
+    const location = useLocation();
 
     useEffect(() => {
         bootstrapSession().finally(() => setReady(true));
     }, []);
+
+    useEffect(() => {
+        if (typeof window.gtag === 'function') {
+            window.gtag('config', 'G-2DZLJZYT26', { page_path: location.pathname });
+        }
+    }, [location]);
 
     if (!ready) return <Fallback />;
 
