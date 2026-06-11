@@ -47,5 +47,7 @@ Route::get('/reader/home', $spa);
 Route::get('/reader/articles/{identifier}', $spa);
 Route::get('/reader/bookmarks', $spa);
 Route::get('/reader/settings', $spa);
+Route::get('/login', $spa);
+Route::get('/news/{identifier}', $spa);
 
 
