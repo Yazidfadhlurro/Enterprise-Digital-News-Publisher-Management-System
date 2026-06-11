@@ -21,7 +21,7 @@ import { useI18n } from '../../lib/i18n';
 
 const TITLE_MAX = 120;
 const MAX_TAGS = 5;
-const MAX_IMAGE_SIZE = 4 * 1024 * 1024;
+const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
 const AUTOSAVE_DEBOUNCE_MS = 1800;
 const ADD_CATEGORY_OPTION = '__add_new_category__';
 
@@ -718,13 +718,53 @@ export default function AuthorArticleFormPage() {
         }
     }
 
+    async function compressImage(file, maxSizeBytes = 900 * 1024) {
+        if (file.size <= maxSizeBytes) return file;
+
+        return new Promise((resolve) => {
+            const img = new Image();
+            const url = URL.createObjectURL(file);
+            img.onload = () => {
+                URL.revokeObjectURL(url);
+                const canvas = document.createElement('canvas');
+                let { width, height } = img;
+                const maxDim = 1920;
+                if (width > maxDim || height > maxDim) {
+                    const ratio = Math.min(maxDim / width, maxDim / height);
+                    width = Math.round(width * ratio);
+                    height = Math.round(height * ratio);
+                }
+                canvas.width = width;
+                canvas.height = height;
+                canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+
+                let quality = 0.85;
+                const tryCompress = () => {
+                    canvas.toBlob((blob) => {
+                        if (!blob) { resolve(file); return; }
+                        if (blob.size <= maxSizeBytes || quality <= 0.3) {
+                            resolve(new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), { type: 'image/jpeg' }));
+                        } else {
+                            quality -= 0.1;
+                            tryCompress();
+                        }
+                    }, 'image/jpeg', quality);
+                };
+                tryCompress();
+            };
+            img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+            img.src = url;
+        });
+    }
+
     async function uploadMediaAsset(file, altText = '') {
         const token = getToken();
         setMediaUploading(true);
 
         try {
+            const fileToUpload = file.type.startsWith('image/') ? await compressImage(file) : file;
             const formData = new FormData();
-            formData.append('file', file);
+            formData.append('file', fileToUpload);
             if (altText) {
                 formData.append('alt_text', altText);
             }
