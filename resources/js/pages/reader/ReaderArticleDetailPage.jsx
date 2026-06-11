@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import ReaderShell from '../../components/ReaderShell';
 import { apiRequest } from '../../lib/api';
 import { getToken } from '../../lib/auth';
@@ -38,6 +38,7 @@ function StarButton({ active, onClick, label }) {
 
 export default function ReaderArticleDetailPage() {
     const { identifier } = useParams();
+    const navigate = useNavigate();
     const notify = useNotify();
     const { t, intlLocale } = useI18n();
 
@@ -57,13 +58,17 @@ export default function ReaderArticleDetailPage() {
 
     useErrorNotification(error, setError);
 
+    function requireAuth() {
+        navigate('/login', { state: { from: `/news/${identifier}` } });
+        return false;
+    }
+
     async function loadDetail() {
-        const token = getToken();
         setLoading(true);
         setError('');
 
         try {
-            const payload = await apiRequest(`/user/articles/${identifier}`, { token });
+            const payload = await apiRequest(`/public/articles/${identifier}`);
 
             if (payload?.status !== 'success') {
                 throw new Error(payload?.message || t('reader.detail.errorLoad', 'Gagal memuat detail berita.'));
@@ -76,7 +81,7 @@ export default function ReaderArticleDetailPage() {
 
             // Fetch categories for footer
             try {
-                const catPayload = await apiRequest('/user/articles?per_page=1', { token });
+                const catPayload = await apiRequest('/public/articles?per_page=1');
                 const cats = catPayload?.data?.filters?.category_options || [];
                 setFooterCategories(cats.slice(0, 4));
             } catch (_) {
@@ -90,12 +95,11 @@ export default function ReaderArticleDetailPage() {
     }
 
     async function loadComments(silent = false) {
-        const token = getToken();
         if (!silent) setCommentsLoading(true);
         setError('');
 
         try {
-            const payload = await apiRequest(`/user/articles/${identifier}/comments?per_page=20`, { token });
+            const payload = await apiRequest(`/public/articles/${identifier}/comments?per_page=20`);
 
             if (payload?.status !== 'success') {
                 throw new Error(payload?.message || t('reader.detail.errorLoadComments', 'Gagal memuat komentar berita.'));
@@ -115,9 +119,8 @@ export default function ReaderArticleDetailPage() {
     }, [identifier]);
 
     async function toggleBookmark() {
-        if (!article || bookmarkSubmitting) {
-            return;
-        }
+        if (!article || bookmarkSubmitting) return;
+        if (!getToken()) return requireAuth();
 
         const token = getToken();
         setBookmarkSubmitting(true);
@@ -156,9 +159,8 @@ export default function ReaderArticleDetailPage() {
     }
 
     async function submitRating() {
-        if (!article || ratingSubmitting || ratingValue < 1 || ratingValue > 5) {
-            return;
-        }
+        if (!article || ratingSubmitting || ratingValue < 1 || ratingValue > 5) return;
+        if (!getToken()) return requireAuth();
 
         const token = getToken();
         setRatingSubmitting(true);
@@ -202,13 +204,9 @@ export default function ReaderArticleDetailPage() {
         event.preventDefault();
 
         const cleanComment = commentInput.trim();
-        if (!cleanComment) {
-            return;
-        }
-
-        if (!article || commentSubmitting) {
-            return;
-        }
+        if (!cleanComment) return;
+        if (!article || commentSubmitting) return;
+        if (!getToken()) return requireAuth();
 
         const token = getToken();
         setCommentSubmitting(true);
@@ -402,7 +400,7 @@ export default function ReaderArticleDetailPage() {
                             const relatedReadingMinutes = estimateReadMinutesFromSnippet(item.title, item.excerpt);
 
                             return (
-                                <Link key={item.id} to={`/reader/articles/${item.slug || item.id}`} className="reader-related-card rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                                <Link key={item.id} to={`/news/${item.slug || item.id}`} className="reader-related-card rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden hover:shadow-md transition-shadow">
                                 <div className="h-28 bg-slate-100">
                                     {item.featured_image ? (
                                         <img src={articleImageUrl(item)} alt={item.title} className="w-full h-full object-cover" loading="lazy" decoding="async" />

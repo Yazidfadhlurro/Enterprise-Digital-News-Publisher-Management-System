@@ -76,7 +76,7 @@ class ReaderArticleController extends Controller
         $articleIds = $items->pluck('id')->map(fn ($id) => (int) $id)->values()->all();
 
         $bookmarkedIds = collect();
-        if ($articleIds !== [] && Schema::hasColumn('bookmarks', 'user_id')) {
+        if ($articleIds !== [] && $actor && Schema::hasColumn('bookmarks', 'user_id')) {
             $bookmarkedIds = DB::table('bookmarks')
                 ->where('user_id', (int) $actor->id)
                 ->whereIn('article_id', $articleIds)
@@ -301,7 +301,7 @@ class ReaderArticleController extends Controller
             ->all();
 
         $bookmarkedIds = collect();
-        if ($insightArticleIds !== [] && Schema::hasColumn('bookmarks', 'user_id')) {
+        if ($insightArticleIds !== [] && $actor && Schema::hasColumn('bookmarks', 'user_id')) {
             $bookmarkedIds = DB::table('bookmarks')
                 ->where('user_id', (int) $actor->id)
                 ->whereIn('article_id', $insightArticleIds)
@@ -355,25 +355,27 @@ class ReaderArticleController extends Controller
         }
 
         $articleId = (int) $article->id;
-        $userId = (int) $actor->id;
         $currentViewsCount = (int) ($article->views_count ?? 0);
 
-        if (Schema::hasTable('article_views')) {
-            $inserted = DB::table('article_views')->insertOrIgnore([
-                'article_id' => $articleId,
-                'user_id' => $userId,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+        if ($actor) {
+            $userId = (int) $actor->id;
+            if (Schema::hasTable('article_views')) {
+                $inserted = DB::table('article_views')->insertOrIgnore([
+                    'article_id' => $articleId,
+                    'user_id' => $userId,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
 
-            if ((int) $inserted > 0) {
+                if ((int) $inserted > 0) {
+                    DB::table('articles')->where('id', $articleId)->increment('views_count');
+                }
+
+                $currentViewsCount = (int) (DB::table('articles')->where('id', $articleId)->value('views_count') ?? $currentViewsCount);
+            } else {
                 DB::table('articles')->where('id', $articleId)->increment('views_count');
+                $currentViewsCount += 1;
             }
-
-            $currentViewsCount = (int) (DB::table('articles')->where('id', $articleId)->value('views_count') ?? $currentViewsCount);
-        } else {
-            DB::table('articles')->where('id', $articleId)->increment('views_count');
-            $currentViewsCount += 1;
         }
 
         $ratingsSummary = Cache::remember(ReaderCache::ratingSummaryKey($articleId), now()->addMinutes(1), function () use ($articleId) {
@@ -394,7 +396,7 @@ class ReaderArticleController extends Controller
         });
 
         $currentUserRating = null;
-        if (Schema::hasColumn('article_ratings', 'user_id')) {
+        if ($actor && Schema::hasColumn('article_ratings', 'user_id')) {
             $currentUserRating = DB::table('article_ratings')
                 ->where('article_id', (int) $article->id)
                 ->where('user_id', (int) $actor->id)
@@ -402,7 +404,7 @@ class ReaderArticleController extends Controller
         }
 
         $isBookmarked = false;
-        if (Schema::hasColumn('bookmarks', 'user_id')) {
+        if ($actor && Schema::hasColumn('bookmarks', 'user_id')) {
             $isBookmarked = DB::table('bookmarks')
                 ->where('article_id', (int) $article->id)
                 ->where('user_id', (int) $actor->id)
@@ -520,18 +522,15 @@ class ReaderArticleController extends Controller
             ->leftJoin('readers as r', 'r.id', '=', 'c.reader_id')
             ->where('c.article_id', (int) $article->id)
             ->where(function ($subQuery) use ($actor) {
-                $subQuery
-                    ->where('c.status', 'approved')
-                    ->orWhere(function ($innerQuery) use ($actor) {
-                        if (Schema::hasColumn('comments', 'user_id')) {
-                            $innerQuery
-                                ->where('c.user_id', (int) $actor->id)
-                                ->whereIn('c.status', ['pending', 'approved']);
-                            return;
-                        }
+                $subQuery->where('c.status', 'approved');
 
-                        $innerQuery->whereRaw('1 = 0');
+                if ($actor && Schema::hasColumn('comments', 'user_id')) {
+                    $subQuery->orWhere(function ($innerQuery) use ($actor) {
+                        $innerQuery
+                            ->where('c.user_id', (int) $actor->id)
+                            ->whereIn('c.status', ['pending', 'approved']);
                     });
+                }
             })
             ->select([
                 'c.id',

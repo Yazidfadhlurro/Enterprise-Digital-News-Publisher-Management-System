@@ -68,6 +68,14 @@ Route::prefix('auth')->group(function () {
 });
 
 
+// Public reader routes — tidak perlu login
+Route::prefix('public')->group(function () {
+    Route::get('/articles', [ReaderArticleController::class, 'index']);
+    Route::get('/articles/insights', [ReaderArticleController::class, 'insights']);
+    Route::get('/articles/{identifier}/comments', [ReaderArticleController::class, 'comments']);
+    Route::get('/articles/{identifier}', [ReaderArticleController::class, 'show']);
+});
+
 Route::middleware([
     \App\Http\Middleware\EncryptCookies::class,
     \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
@@ -228,14 +236,10 @@ Route::middleware([
 
 
     Route::middleware(['auth-scope:public,internal', 'role:user,admin'])->prefix('user')->group(function () {
-        Route::get('/articles', [ReaderArticleController::class, 'index']);
-        Route::get('/articles/insights', [ReaderArticleController::class, 'insights']);
-        Route::get('/articles/{identifier}/comments', [ReaderArticleController::class, 'comments']);
         Route::post('/articles/{identifier}/comments', [ReaderArticleController::class, 'storeComment']);
         Route::post('/articles/{identifier}/like', [ReaderArticleController::class, 'toggleLike']);
         Route::post('/articles/{identifier}/bookmark', [ReaderArticleController::class, 'toggleBookmark']);
         Route::post('/articles/{identifier}/rating', [ReaderArticleController::class, 'rate']);
-        Route::get('/articles/{identifier}', [ReaderArticleController::class, 'show']);
         Route::get('/bookmarks', [ReaderArticleController::class, 'bookmarks']);
     });
 });

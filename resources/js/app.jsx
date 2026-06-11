@@ -51,7 +51,7 @@ function RequireAuth({ children }) {
 function RequireAdmin({ children }) {
     const token = getToken();
     const user = getUser();
-    if (!token || !user) return <Navigate to="/" replace />;
+    if (!token || !user) return <Navigate to="/login" replace />;
     if (user.role !== 'admin') return <Navigate to="/welcome" replace />;
     return children;
 }
@@ -59,7 +59,7 @@ function RequireAdmin({ children }) {
 function RequireReviewer({ children }) {
     const token = getToken();
     const user = getUser();
-    if (!token) return <Navigate to="/" replace />;
+    if (!token) return <Navigate to="/login" replace />;
     if (!user || (user.role !== 'reviewer' && user.role !== 'admin')) return <Navigate to="/welcome" replace />;
     return children;
 }
@@ -67,7 +67,7 @@ function RequireReviewer({ children }) {
 function RequireAuthor({ children }) {
     const token = getToken();
     const user = getUser();
-    if (!token) return <Navigate to="/" replace />;
+    if (!token) return <Navigate to="/login" replace />;
     if (!user || (user.role !== 'author' && user.role !== 'admin')) return <Navigate to="/welcome" replace />;
     return children;
 }
@@ -75,7 +75,7 @@ function RequireAuthor({ children }) {
 function RequireReader({ children }) {
     const token = getToken();
     const user = getUser();
-    if (!token) return <Navigate to="/" replace />;
+    if (!token) return <Navigate to="/login" replace />;
     if (!user || (user.role !== 'user' && user.role !== 'admin')) return <Navigate to="/welcome" replace />;
     return children;
 }
@@ -106,7 +106,9 @@ export default function App() {
         <div style={{ fontFamily: 'Sora, sans-serif' }}>
             <Suspense fallback={<Fallback />}>
                 <Routes>
-                    <Route path="/" element={<LoginPage />} />
+                    <Route path="/" element={<ReaderHomePage />} />
+                    <Route path="/news/:identifier" element={<ReaderArticleDetailPage />} />
+                    <Route path="/login" element={<LoginPage />} />
                     <Route path="/internal/login" element={<InternalLoginPage />} />
                     <Route path="/forgot-password" element={<ForgotPasswordPage />} />
                     <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
@@ -141,9 +143,9 @@ export default function App() {
                     <Route path="/author/activities" element={<RequireAuthor><AuthorActivityPage /></RequireAuthor>} />
                     <Route path="/author/feedback" element={<RequireAuthor><AuthorFeedbackPage /></RequireAuthor>} />
                     <Route path="/author/settings" element={<RequireAuthor><AuthorSettingsPage /></RequireAuthor>} />
-                    <Route path="/reader" element={<Navigate to="/reader/home" replace />} />
-                    <Route path="/reader/home" element={<RequireReader><ReaderHomePage /></RequireReader>} />
-                    <Route path="/reader/articles/:identifier" element={<RequireReader><ReaderArticleDetailPage /></RequireReader>} />
+                    <Route path="/reader" element={<Navigate to="/" replace />} />
+                    <Route path="/reader/home" element={<Navigate to="/" replace />} />
+                    <Route path="/reader/articles/:identifier" element={<Navigate to="/" replace />} />
                     <Route path="/reader/bookmarks" element={<RequireReader><ReaderBookmarksPage /></RequireReader>} />
                     <Route path="/reader/settings" element={<RequireReader><ReaderSettingsPage /></RequireReader>} />
                     <Route path="*" element={<Navigate to="/" replace />} />

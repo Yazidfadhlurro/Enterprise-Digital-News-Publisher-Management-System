@@ -2,7 +2,6 @@
 import { Link } from 'react-router-dom';
 import ReaderShell from '../../components/ReaderShell';
 import { apiRequest } from '../../lib/api';
-import { getToken } from '../../lib/auth';
 import { useI18n } from '../../lib/i18n';
 import { articleImageUrl } from '../../lib/media';
 import { useErrorNotification } from '../../lib/notify';
@@ -98,7 +97,7 @@ function ArticleCard({ article, intlLocale, t }) {
 
     return (
         <article className="reader-portal-news-card rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-            <Link to={`/reader/articles/${article.slug || article.id}`} className="reader-portal-news-card-media block h-40 bg-slate-100">
+            <Link to={`/news/${article.slug || article.id}`} className="reader-portal-news-card-media block h-40 bg-slate-100">
                 <div className="h-full w-full">
                     {imageUrl ? (
                         <img src={imageUrl} alt={article?.featured_image_alt || article?.title || '-'} className="w-full h-full object-cover" loading="lazy" decoding="async" />
@@ -116,7 +115,7 @@ function ArticleCard({ article, intlLocale, t }) {
                     <p className="text-[10px] text-slate-500">{t('reader.home.minutesRead', '{count} menit baca', { count: readingMinutes })}</p>
                 </div>
 
-                <Link to={`/reader/articles/${article.slug || article.id}`} className="block mt-1">
+                <Link to={`/news/${article.slug || article.id}`} className="block mt-1">
                     <h3 className="reader-display text-[18px] leading-[1.2] font-semibold text-slate-900 line-clamp-2 hover:text-blue-700 transition-colors">
                         {article.title || '-'}
                     </h3>
@@ -135,7 +134,7 @@ function ArticleCard({ article, intlLocale, t }) {
 
 function SidebarPopularItem({ article, rank, intlLocale }) {
     return (
-        <Link to={`/reader/articles/${article.slug || article.id}`} className="reader-portal-popular-item flex items-start gap-2.5">
+        <Link to={`/news/${article.slug || article.id}`} className="reader-portal-popular-item flex items-start gap-2.5">
             <span className="reader-portal-popular-rank inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold">
                 {rank}
             </span>
@@ -197,7 +196,6 @@ export default function ReaderHomePage() {
     }, [searchInput]);
 
     async function loadArticles(targetPage = page) {
-        const token = getToken();
         setLoading(true);
         setError('');
 
@@ -209,7 +207,7 @@ export default function ReaderHomePage() {
                 category_id: categoryId,
             });
 
-            const payload = await apiRequest(`/user/articles?${params.toString()}`, { token });
+            const payload = await apiRequest(`/public/articles?${params.toString()}`);
 
             if (payload?.status !== 'success') {
                 throw new Error(payload?.message || t('reader.home.errorLoad', 'Gagal memuat berita pembaca.'));
@@ -231,11 +229,10 @@ export default function ReaderHomePage() {
     }
 
     async function loadGlobalInsights() {
-        const token = getToken();
         setInsightsLoading(true);
 
         try {
-            const payload = await apiRequest('/user/articles/insights?trending_limit=5&picks_limit=4', { token });
+            const payload = await apiRequest('/public/articles/insights?trending_limit=5&picks_limit=4');
 
             if (payload?.status !== 'success') {
                 throw new Error(payload?.message || t('reader.home.errorLoadInsights', 'Gagal memuat insight berita.'));
@@ -440,7 +437,7 @@ export default function ReaderHomePage() {
                         <div className="space-y-5">
                             <div className="reader-home-portal-hero-grid grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_290px] gap-4">
                                 <article className="reader-home-portal-hero-card relative rounded-xl overflow-hidden border border-slate-200 shadow-sm">
-                                    <Link to={`/reader/articles/${heroArticle.slug || heroArticle.id}`} className="reader-home-portal-hero-media block h-[340px] sm:h-[380px]">
+                                    <Link to={`/news/${heroArticle.slug || heroArticle.id}`} className="reader-home-portal-hero-media block h-[340px] sm:h-[380px]">
                                         {heroArticle.featured_image ? (
                                             <img
                                                 src={articleImageUrl(heroArticle)}
@@ -508,7 +505,7 @@ export default function ReaderHomePage() {
 
                                     <div className="space-y-2.5">
                                         {trendingSidebarItems.length ? trendingSidebarItems.map((article, index) => (
-                                            <Link key={article.id} to={`/reader/articles/${article.slug || article.id}`} className="reader-home-portal-trending-item flex items-start gap-2.5">
+                                            <Link key={article.id} to={`/news/${article.slug || article.id}`} className="reader-home-portal-trending-item flex items-start gap-2.5">
                                                 <span className="reader-home-portal-trending-rank inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold">
                                                     {index + 1}
                                                 </span>

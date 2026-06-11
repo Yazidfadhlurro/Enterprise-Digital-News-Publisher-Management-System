@@ -113,7 +113,7 @@ export default function ReaderShell({
 
     useEffect(() => {
         if (footerCategories.length) return;
-        apiRequest('/user/articles?per_page=1', { token: getToken() })
+        apiRequest('/public/articles?per_page=1')
             .then((payload) => {
                 const cats = payload?.data?.filters?.category_options || [];
                 if (cats.length) setResolvedFooterCategories(cats.slice(0, 4));
@@ -313,67 +313,78 @@ export default function ReaderShell({
                                 <span className="hidden xl:inline">{currentMode.label}</span>
                             </button>
 
-                            <p className="reader-header-user-name hidden xl:block max-w-[180px] truncate text-sm font-semibold text-slate-700" title={displayName}>
-                                {displayName}
-                            </p>
+                            {user ? (
+                                <>
+                                    <p className="reader-header-user-name hidden xl:block max-w-[180px] truncate text-sm font-semibold text-slate-700" title={displayName}>
+                                        {displayName}
+                                    </p>
 
-                            <div className="reader-profile-menu-wrap relative" ref={profileMenuRef}>
-                                <button
-                                    type="button"
-                                    onClick={() => setIsProfileMenuOpen((previous) => !previous)}
-                                    className={`reader-avatar-button w-9 h-9 rounded-full overflow-hidden bg-slate-100 text-slate-700 font-semibold flex items-center justify-center ring-1 ring-slate-200 ${isProfileMenuOpen ? 'is-open' : ''}`.trim()}
-                                    aria-label={t('reader.nav.settings', 'Pengaturan')}
-                                    aria-haspopup="menu"
-                                    aria-expanded={isProfileMenuOpen}
-                                    aria-controls="reader-profile-menu"
-                                    title={displayName}
-                                >
-                                    {avatarUrl ? (
-                                        <img src={avatarUrl} alt={displayName || 'Avatar'} className="w-full h-full object-cover" />
-                                    ) : avatarInitial}
-                                </button>
+                                    <div className="reader-profile-menu-wrap relative" ref={profileMenuRef}>
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsProfileMenuOpen((previous) => !previous)}
+                                            className={`reader-avatar-button w-9 h-9 rounded-full overflow-hidden bg-slate-100 text-slate-700 font-semibold flex items-center justify-center ring-1 ring-slate-200 ${isProfileMenuOpen ? 'is-open' : ''}`.trim()}
+                                            aria-label={t('reader.nav.settings', 'Pengaturan')}
+                                            aria-haspopup="menu"
+                                            aria-expanded={isProfileMenuOpen}
+                                            aria-controls="reader-profile-menu"
+                                            title={displayName}
+                                        >
+                                            {avatarUrl ? (
+                                                <img src={avatarUrl} alt={displayName || 'Avatar'} className="w-full h-full object-cover" />
+                                            ) : avatarInitial}
+                                        </button>
 
-                                {isProfileMenuOpen ? (
-                                    <div
-                                        id="reader-profile-menu"
-                                        role="menu"
-                                        className="reader-profile-menu absolute right-0 top-[calc(100%+8px)] z-50 min-w-[180px] rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg"
-                                    >
-                                        <button
-                                            type="button"
-                                            role="menuitem"
-                                            onClick={() => handleProfileMenuNavigate('/reader/home')}
-                                            className="reader-profile-menu-item"
-                                        >
-                                            {t('reader.nav.home', 'Beranda')}
-                                        </button>
-                                        <button
-                                            type="button"
-                                            role="menuitem"
-                                            onClick={() => handleProfileMenuNavigate('/reader/bookmarks')}
-                                            className="reader-profile-menu-item"
-                                        >
-                                            {t('reader.nav.bookmarks', 'Bookmark')}
-                                        </button>
-                                        <button
-                                            type="button"
-                                            role="menuitem"
-                                            onClick={() => handleProfileMenuNavigate('/reader/settings')}
-                                            className="reader-profile-menu-item"
-                                        >
-                                            {t('reader.nav.settings', 'Pengaturan')}
-                                        </button>
-                                        <button
-                                            type="button"
-                                            role="menuitem"
-                                            onClick={handleProfileMenuLogout}
-                                            className="reader-profile-menu-item"
-                                        >
-                                            {t('shell.logout', 'Keluar')}
-                                        </button>
+                                        {isProfileMenuOpen ? (
+                                            <div
+                                                id="reader-profile-menu"
+                                                role="menu"
+                                                className="reader-profile-menu absolute right-0 top-[calc(100%+8px)] z-50 min-w-[180px] rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg"
+                                            >
+                                                <button
+                                                    type="button"
+                                                    role="menuitem"
+                                                    onClick={() => handleProfileMenuNavigate('/')}
+                                                    className="reader-profile-menu-item"
+                                                >
+                                                    {t('reader.nav.home', 'Beranda')}
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    role="menuitem"
+                                                    onClick={() => handleProfileMenuNavigate('/reader/bookmarks')}
+                                                    className="reader-profile-menu-item"
+                                                >
+                                                    {t('reader.nav.bookmarks', 'Bookmark')}
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    role="menuitem"
+                                                    onClick={() => handleProfileMenuNavigate('/reader/settings')}
+                                                    className="reader-profile-menu-item"
+                                                >
+                                                    {t('reader.nav.settings', 'Pengaturan')}
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    role="menuitem"
+                                                    onClick={handleProfileMenuLogout}
+                                                    className="reader-profile-menu-item"
+                                                >
+                                                    {t('shell.logout', 'Keluar')}
+                                                </button>
+                                            </div>
+                                        ) : null}
                                     </div>
-                                ) : null}
-                            </div>
+                                </>
+                            ) : (
+                                <Link
+                                    to="/login"
+                                    className="inline-flex items-center rounded-lg border border-blue-600 bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-blue-700"
+                                >
+                                    {t('auth.login', 'Login')}
+                                </Link>
+                            )}
                         </div>
                     </div>
                 </div>
