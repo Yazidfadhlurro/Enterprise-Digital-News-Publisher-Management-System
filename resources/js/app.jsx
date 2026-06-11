@@ -96,7 +96,7 @@ export default function App() {
 
     useEffect(() => {
         if (typeof window.gtag === 'function') {
-            window.gtag('config', 'G-2DZLJZYT26', { page_path: location.pathname });
+            window.gtag('config', 'G-CG9WRET77X', { page_path: location.pathname });
         }
     }, [location]);
 
