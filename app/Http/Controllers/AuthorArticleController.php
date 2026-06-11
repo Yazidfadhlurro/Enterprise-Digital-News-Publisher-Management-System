@@ -427,14 +427,6 @@ class AuthorArticleController extends Controller
         $authorId = (int) $request->user()->id;
         $altText = ContentSanitizer::sanitizePlainText((string) ($validated['alt_text'] ?? ''));
         $mimeType = (string) ($file->getClientMimeType() ?: $file->getMimeType() ?: '');
-        $isImageUpload = str_starts_with($mimeType, 'image/');
-
-        if ($isImageUpload && $altText === '') {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Teks alternatif gambar wajib diisi.',
-            ], 422);
-        }
 
         $fileBinary = @file_get_contents($file->getRealPath());
         if ($fileBinary === false) {

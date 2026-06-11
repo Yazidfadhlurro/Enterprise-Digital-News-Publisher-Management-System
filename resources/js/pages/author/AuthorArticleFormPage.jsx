@@ -526,12 +526,6 @@ export default function AuthorArticleFormPage() {
         if (name === 'featured_image_alt') {
             setImageError('');
             setForm((previous) => ({ ...previous, [name]: value }));
-            // Jika ada file pending yang menunggu alt text, upload sekarang
-            if (value.trim().length >= 8 && pendingImageFileRef.current) {
-                const file = pendingImageFileRef.current;
-                pendingImageFileRef.current = null;
-                uploadMedia(file);
-            }
             return;
         }
 
@@ -689,16 +683,8 @@ export default function AuthorArticleFormPage() {
         }
 
         setFeaturedImageLabel(file.name);
-        // Tampilkan preview lokal dulu, upload dilakukan setelah alt text diisi
         setLocalImagePreviewFromFile(file);
-        // Simpan file untuk di-upload nanti jika alt text belum ada
-        pendingImageFileRef.current = file;
-
-        const altText = form.featured_image_alt?.trim() || '';
-        if (!altText) {
-            setImageError(t('author.form.errorImageAlt', 'Isi alt text gambar terlebih dahulu sebelum upload media.'));
-            return;
-        }
+        pendingImageFileRef.current = null;
 
         await uploadMedia(file);
     }
@@ -790,13 +776,6 @@ export default function AuthorArticleFormPage() {
 
     async function uploadMedia(file) {
         const altText = form.featured_image_alt?.trim() || '';
-
-        if (!altText) {
-            const message = t('author.form.errorImageAlt', 'Isi alt text gambar terlebih dahulu sebelum upload media.');
-            setImageError(message);
-            showCenterNotice(message);
-            return;
-        }
 
         try {
             const media = await uploadMediaAsset(file, altText);
@@ -1018,8 +997,8 @@ export default function AuthorArticleFormPage() {
             },
             {
                 key: 'media',
-                label: t('author.form.seoImage', 'Gambar unggulan + teks alternatif tersedia'),
-                passed: Boolean(featuredImagePath) && altLength >= 8,
+                label: t('author.form.seoImage', 'Gambar unggulan tersedia'),
+                passed: Boolean(featuredImagePath),
             },
         ];
 
