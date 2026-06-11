@@ -254,6 +254,7 @@ export default function ReaderShell({
         } catch (_) {
         } finally {
             clearAuth();
+            setUser(null);
             navigate('/', { replace: true });
         }
     }
